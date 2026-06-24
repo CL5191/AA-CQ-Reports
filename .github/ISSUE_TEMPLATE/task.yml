@@ -1,0 +1,20 @@
+name: Task
+description: Track implementation or maintenance work
+title: "task: "
+labels:
+  - task
+body:
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: What is the task outcome?
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Definition of done
+      description: How do we know this task is complete?
+    validations:
+      required: true

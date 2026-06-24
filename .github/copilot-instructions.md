@@ -13,10 +13,10 @@
 ## Tech stack
 
 <!-- FILL: e.g. Node.js 20 + TypeScript 5 + Azure Functions. Pin versions. -->
-- Language / runtime:
-- Framework(s):
-- Test runner:
-- Infra / deploy target:
+- Language / runtime: Node.js 20 LTS + JavaScript (CommonJS)
+- Framework(s): None (Node.js standard library baseline)
+- Test runner: node:test (built into Node.js)
+- Infra / deploy target: GitHub Actions CI (future deploy target TBD)
 
 ## The Dev Loop (how we work here)
 
@@ -68,8 +68,8 @@ src/ (or app pkg)              ← the runtime
 ## Code standards
 
 <!-- FILL: tighten to your stack. Examples below. -->
-- Lint/format: <!-- e.g. ESLint + Prettier, 2-space indent, single quotes -->
-- Tests live in: <!-- e.g. __tests__/ --> and run on every PR via `ci.yml`.
+- Lint/format: `node --check` for syntax validation, 2-space indent, LF line endings via `.editorconfig`.
+- Tests live in: `test/` and run on every PR via `ci.yml`.
 - Validate all input at the API boundary. Never log secrets or tokens.
 - Prefer the stack's stdlib / first-party libraries before adding a dependency.
 

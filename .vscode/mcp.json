@@ -1,0 +1,13 @@
+{
+  // Starter MCP server list. Extend this as your team adds servers.
+  "servers": {
+    "github": {
+      // Replace with the server command used in your environment.
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ]
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "aa-cq-reports",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Comprehensive reporting solution for Teams AA-CQ",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "lint": "node --check src/index.js && node --check test/index.test.js",
+    "test": "node --test",
+    "build": "node -e \"console.log('Build passed')\""
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
