@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { hello, formatSummary, parseCliArgs, renderSummary } = require("../src/index");
+const { hello, formatSummary, parseCliArgs, renderSummary, readRowsFromCsvFiles } = require("../src/index");
 
 test("hello uses default value", () => {
   assert.equal(hello(), "Hello, AA-CQ reports are ready.");
@@ -29,7 +29,7 @@ test("formatSummary renders core metrics for stakeholders", () => {
 test("parseCliArgs reads csv path and format flag", () => {
   const options = parseCliArgs(["data/sample-cq.csv", "--format", "json"]);
   assert.deepEqual(options, {
-    csvPath: "data/sample-cq.csv",
+    csvPaths: ["data/sample-cq.csv"],
     format: "json",
     source: "cq"
   });
@@ -38,7 +38,7 @@ test("parseCliArgs reads csv path and format flag", () => {
 test("parseCliArgs supports csv output format", () => {
   const options = parseCliArgs(["data/sample-cq.csv", "--format", "csv"]);
   assert.deepEqual(options, {
-    csvPath: "data/sample-cq.csv",
+    csvPaths: ["data/sample-cq.csv"],
     format: "csv",
     source: "cq"
   });
@@ -47,10 +47,38 @@ test("parseCliArgs supports csv output format", () => {
 test("parseCliArgs supports source selection", () => {
   const options = parseCliArgs(["data/sample-aa.csv", "--source", "aa", "--format", "json"]);
   assert.deepEqual(options, {
-    csvPath: "data/sample-aa.csv",
+    csvPaths: ["data/sample-aa.csv"],
     format: "json",
     source: "aa"
   });
+});
+
+test("parseCliArgs supports multiple csv inputs", () => {
+  const options = parseCliArgs(["data/a.csv", "data/b.csv", "--format", "json"]);
+  assert.deepEqual(options, {
+    csvPaths: ["data/a.csv", "data/b.csv"],
+    format: "json",
+    source: "cq"
+  });
+});
+
+test("readRowsFromCsvFiles combines rows from all files", () => {
+  const rows = readRowsFromCsvFiles(["first.csv", "second.csv"], (filePath) => {
+    if (filePath === "first.csv") {
+      return [{ id: 1 }];
+    }
+
+    return [{ id: 2 }, { id: 3 }];
+  });
+
+  assert.deepEqual(rows, [{ id: 1 }, { id: 2 }, { id: 3 }]);
+});
+
+test("readRowsFromCsvFiles validates required files", () => {
+  assert.throws(
+    () => readRowsFromCsvFiles([], () => []),
+    /At least one CSV file path is required/
+  );
 });
 
 test("renderSummary supports json output", () => {
