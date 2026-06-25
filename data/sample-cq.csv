@@ -1,0 +1,6 @@
+CallId,QueueName,WaitTimeSeconds,AgentName,Timestamp
+1001,Sales,12,Alice,2026-06-20T10:00:00Z
+1002,Sales,34,Bob,2026-06-20T10:01:00Z
+1003,Support,20,Chris,2026-06-20T10:02:00Z
+1004,Support,8,Dana,2026-06-20T10:03:00Z
+1005,Support,0,Eli,2026-06-20T10:04:00Z
