@@ -1,5 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 const { readCallQueueCsv, buildSummary } = require("../src/csv-reader");
 
@@ -33,4 +35,34 @@ test("buildSummary returns total calls, average wait, and calls per queue", () =
 
 test("readCallQueueCsv validates required file path", () => {
   assert.throws(() => readCallQueueCsv(), /CSV file path is required/);
+});
+
+test("readCallQueueCsv throws when required headers are missing", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "aa-cq-missing-headers-"));
+  const filePath = path.join(tempDir, "missing-headers.csv");
+
+  try {
+    fs.writeFileSync(filePath, "CallId,Queue\n1001,Sales\n", "utf8");
+
+    assert.throws(
+      () => readCallQueueCsv(filePath),
+      /CSV is missing required headers: QueueName, WaitTimeSeconds\./
+    );
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("readCallQueueCsv returns empty rows for header-only CSV", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "aa-cq-header-only-"));
+  const filePath = path.join(tempDir, "header-only.csv");
+
+  try {
+    fs.writeFileSync(filePath, "QueueName,WaitTimeSeconds\n", "utf8");
+
+    const rows = readCallQueueCsv(filePath);
+    assert.deepEqual(rows, []);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
 });
