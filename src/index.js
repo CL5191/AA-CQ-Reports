@@ -18,7 +18,7 @@ function formatSummary(summary) {
 }
 
 function parseCliArgs(argv) {
-  let csvPath = "";
+  const csvPaths = [];
   let format = "text";
   let source = "cq";
 
@@ -37,12 +37,24 @@ function parseCliArgs(argv) {
       continue;
     }
 
-    if (!csvPath) {
-      csvPath = arg;
-    }
+    csvPaths.push(arg);
   }
 
-  return { csvPath, format, source };
+  return { csvPaths, format, source };
+}
+
+function readRowsFromCsvFiles(filePaths, readRowsFn) {
+  if (!Array.isArray(filePaths) || filePaths.length === 0) {
+    throw new Error("At least one CSV file path is required.");
+  }
+
+  const allRows = [];
+  for (const filePath of filePaths) {
+    const rows = readRowsFn(filePath);
+    allRows.push(...rows);
+  }
+
+  return allRows;
 }
 
 function renderSummary(summary, format, source = "cq") {
@@ -78,19 +90,19 @@ function renderSummary(summary, format, source = "cq") {
 }
 
 if (require.main === module) {
-  const { csvPath, format, source } = parseCliArgs(process.argv.slice(2));
+  const { csvPaths, format, source } = parseCliArgs(process.argv.slice(2));
 
-  if (!csvPath) {
-    console.error("Usage: npm start <path-to-csv> [--source cq|aa] [--format text|json|csv]");
+  if (csvPaths.length === 0) {
+    console.error("Usage: npm start <path-to-csv> [additional-csv-paths...] [--source cq|aa] [--format text|json|csv]");
     process.exitCode = 1;
   } else {
     try {
       if (source === "aa") {
-        const rows = readAutoAttendantCsv(csvPath);
+        const rows = readRowsFromCsvFiles(csvPaths, readAutoAttendantCsv);
         const summary = buildAutoAttendantSummary(rows);
         console.log(renderSummary(summary, format, source));
       } else if (source === "cq") {
-        const rows = readCallQueueCsv(csvPath);
+        const rows = readRowsFromCsvFiles(csvPaths, readCallQueueCsv);
         const summary = buildSummary(rows);
         console.log(renderSummary(summary, format, source));
       } else {
@@ -107,5 +119,6 @@ module.exports = {
   hello,
   formatSummary,
   parseCliArgs,
-  renderSummary
+  renderSummary,
+  readRowsFromCsvFiles
 };
