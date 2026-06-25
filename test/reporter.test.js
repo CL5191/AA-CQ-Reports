@@ -4,9 +4,11 @@ const {
   formatSummaryText,
   formatSummaryJson,
   formatSummaryCsv,
+  formatSummaryHtml,
   formatAutoAttendantSummaryText,
   formatAutoAttendantSummaryJson,
-  formatAutoAttendantSummaryCsv
+  formatAutoAttendantSummaryCsv,
+  formatAutoAttendantSummaryHtml
 } = require("../src/reporter");
 
 test("formatSummaryText renders human-readable metrics", () => {
@@ -107,4 +109,34 @@ test("formatAutoAttendantSummaryCsv renders AA summary rows as CSV", () => {
   assert.equal(lines[2], "CallsPerAutoAttendant.Main AA,2");
   assert.equal(lines[3], "MenuSelections.Sales,2");
   assert.equal(lines[4], "TransfersByDestination.Sales Queue,2");
+});
+
+test("formatSummaryHtml renders HTML for CQ summary", () => {
+  const output = formatSummaryHtml({
+    totalCalls: 2,
+    averageWaitTimeSeconds: 15,
+    callsPerQueue: {
+      Sales: 1,
+      Support: 1
+    }
+  });
+
+  assert.match(output, /<!doctype html>/i);
+  assert.match(output, /<h1>AA-CQ Summary<\/h1>/);
+  assert.match(output, /Average Wait Time \(seconds\)/);
+  assert.match(output, /Sales/);
+});
+
+test("formatAutoAttendantSummaryHtml renders HTML for AA summary", () => {
+  const output = formatAutoAttendantSummaryHtml({
+    totalCalls: 2,
+    callsPerAutoAttendant: { "Main AA": 2 },
+    menuSelections: { Sales: 2 },
+    transfersByDestination: { "Sales Queue": 2 }
+  });
+
+  assert.match(output, /<!doctype html>/i);
+  assert.match(output, /<h1>Auto Attendant Summary<\/h1>/);
+  assert.match(output, /Calls Per Auto Attendant/);
+  assert.match(output, /Sales Queue/);
 });

@@ -97,7 +97,7 @@ test("renderSummary supports json output", () => {
 test("renderSummary rejects unsupported format", () => {
   assert.throws(
     () => renderSummary({ totalCalls: 0, averageWaitTimeSeconds: 0, callsPerQueue: {} }, "xml"),
-    /Invalid source\/format/
+    /text\|json\|csv\|html/
   );
 });
 
@@ -130,4 +130,35 @@ test("renderSummary supports AA text output", () => {
 
   assert.match(output, /Auto Attendant Summary/);
   assert.match(output, /Main AA: 2/);
+});
+
+test("renderSummary supports CQ html output", () => {
+  const output = renderSummary(
+    {
+      totalCalls: 1,
+      averageWaitTimeSeconds: 3,
+      callsPerQueue: { Sales: 1 }
+    },
+    "html",
+    "cq"
+  );
+
+  assert.match(output, /<!doctype html>/i);
+  assert.match(output, /AA-CQ Summary/);
+});
+
+test("renderSummary supports AA html output", () => {
+  const output = renderSummary(
+    {
+      totalCalls: 1,
+      callsPerAutoAttendant: { "Main AA": 1 },
+      menuSelections: { Sales: 1 },
+      transfersByDestination: { "Sales Queue": 1 }
+    },
+    "html",
+    "aa"
+  );
+
+  assert.match(output, /<!doctype html>/i);
+  assert.match(output, /Auto Attendant Summary/);
 });
