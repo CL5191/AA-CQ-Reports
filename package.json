@@ -6,7 +6,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "lint": "node --check src/index.js && node --check src/csv-reader.js && node --check src/reporter.js && node --check test/index.test.js && node --check test/csv-reader.test.js && node --check test/reporter.test.js",
+    "lint": "node --check src/index.js && node --check src/csv-reader.js && node --check src/aa-reader.js && node --check src/reporter.js && node --check test/index.test.js && node --check test/csv-reader.test.js && node --check test/aa-reader.test.js && node --check test/reporter.test.js",
     "test": "node --test",
     "build": "node -e \"console.log('Build passed')\""
   },
