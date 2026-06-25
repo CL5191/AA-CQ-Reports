@@ -34,6 +34,14 @@ test("parseCliArgs reads csv path and format flag", () => {
   });
 });
 
+test("parseCliArgs supports csv output format", () => {
+  const options = parseCliArgs(["data/sample-cq.csv", "--format", "csv"]);
+  assert.deepEqual(options, {
+    csvPath: "data/sample-cq.csv",
+    format: "csv"
+  });
+});
+
 test("renderSummary supports json output", () => {
   const output = renderSummary(
     {
@@ -50,6 +58,21 @@ test("renderSummary supports json output", () => {
 test("renderSummary rejects unsupported format", () => {
   assert.throws(
     () => renderSummary({ totalCalls: 0, averageWaitTimeSeconds: 0, callsPerQueue: {} }, "xml"),
-    /Invalid format/
+    /Use --format text, json, or csv/
   );
+});
+
+test("renderSummary supports csv output", () => {
+  const output = renderSummary(
+    {
+      totalCalls: 1,
+      averageWaitTimeSeconds: 3,
+      callsPerQueue: { Sales: 1 }
+    },
+    "csv"
+  );
+
+  assert.match(output, /^Metric,Value/m);
+  assert.match(output, /TotalCalls,1/);
+  assert.match(output, /CallsPerQueue\.Sales,1/);
 });
