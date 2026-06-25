@@ -1,5 +1,5 @@
 const { readCallQueueCsv, buildSummary } = require("./csv-reader");
-const { formatSummaryText, formatSummaryJson } = require("./reporter");
+const { formatSummaryText, formatSummaryJson, formatSummaryCsv } = require("./reporter");
 
 function hello(name = "AA-CQ") {
   return `Hello, ${name} reports are ready.`;
@@ -35,18 +35,22 @@ function renderSummary(summary, format) {
     return formatSummaryJson(summary);
   }
 
+  if (format === "csv") {
+    return formatSummaryCsv(summary);
+  }
+
   if (format === "text") {
     return formatSummaryText(summary);
   }
 
-  throw new Error("Invalid format. Use --format text or --format json.");
+  throw new Error("Invalid format. Use --format text, json, or csv.");
 }
 
 if (require.main === module) {
   const { csvPath, format } = parseCliArgs(process.argv.slice(2));
 
   if (!csvPath) {
-    console.error("Usage: npm start <path-to-call-queue-csv> [--format text|json]");
+    console.error("Usage: npm start <path-to-call-queue-csv> [--format text|json|csv]");
     process.exitCode = 1;
   } else {
     try {
