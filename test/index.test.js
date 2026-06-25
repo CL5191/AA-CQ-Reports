@@ -30,7 +30,8 @@ test("parseCliArgs reads csv path and format flag", () => {
   const options = parseCliArgs(["data/sample-cq.csv", "--format", "json"]);
   assert.deepEqual(options, {
     csvPath: "data/sample-cq.csv",
-    format: "json"
+    format: "json",
+    source: "cq"
   });
 });
 
@@ -38,7 +39,17 @@ test("parseCliArgs supports csv output format", () => {
   const options = parseCliArgs(["data/sample-cq.csv", "--format", "csv"]);
   assert.deepEqual(options, {
     csvPath: "data/sample-cq.csv",
-    format: "csv"
+    format: "csv",
+    source: "cq"
+  });
+});
+
+test("parseCliArgs supports source selection", () => {
+  const options = parseCliArgs(["data/sample-aa.csv", "--source", "aa", "--format", "json"]);
+  assert.deepEqual(options, {
+    csvPath: "data/sample-aa.csv",
+    format: "json",
+    source: "aa"
   });
 });
 
@@ -58,7 +69,7 @@ test("renderSummary supports json output", () => {
 test("renderSummary rejects unsupported format", () => {
   assert.throws(
     () => renderSummary({ totalCalls: 0, averageWaitTimeSeconds: 0, callsPerQueue: {} }, "xml"),
-    /Use --format text, json, or csv/
+    /Invalid source\/format/
   );
 });
 
@@ -75,4 +86,20 @@ test("renderSummary supports csv output", () => {
   assert.match(output, /^Metric,Value/m);
   assert.match(output, /TotalCalls,1/);
   assert.match(output, /CallsPerQueue\.Sales,1/);
+});
+
+test("renderSummary supports AA text output", () => {
+  const output = renderSummary(
+    {
+      totalCalls: 2,
+      callsPerAutoAttendant: { "Main AA": 2 },
+      menuSelections: { Sales: 2 },
+      transfersByDestination: { "Sales Queue": 2 }
+    },
+    "text",
+    "aa"
+  );
+
+  assert.match(output, /Auto Attendant Summary/);
+  assert.match(output, /Main AA: 2/);
 });
