@@ -40,6 +40,12 @@ npm start -- --help
 # AA summary in HTML written to file
 npm start -- data/sample-aa.csv --source aa --format html --out reports/aa-summary.html
 
+# CQ summary in PDF
+npm start -- data/sample-cq.csv --source cq --format pdf --out reports/cq-summary.pdf
+
+# AA summary in Excel-compatible XLS
+npm start -- data/sample-aa.csv --source aa --format xls --out reports/aa-summary.xls
+
 # CQ summary for a date/time range (inclusive)
 npm start -- data/sample-cq.csv --source cq --format json --from 2026-06-20T10:00:00Z --to 2026-06-20T10:03:00Z
 ```
@@ -47,7 +53,7 @@ npm start -- data/sample-cq.csv --source cq --format json --from 2026-06-20T10:0
 CLI options:
 
 - `--source cq|aa` selects call queue or auto attendant input semantics.
-- `--format text|json|csv|html` controls output format.
+- `--format text|json|csv|html|xls|pdf` controls output format.
 - `--out <path>` writes the rendered report to a file (directories are created automatically).
 - `--from <timestamp>` includes rows on/after the timestamp.
 - `--to <timestamp>` includes rows on/before the timestamp.
@@ -83,7 +89,11 @@ The CI workflow now generates sample report files and uploads them as run artifa
 - Included files:
 	- `reports/cq-summary.html`
 	- `reports/cq-summary.json`
+	- `reports/cq-summary.xls`
+	- `reports/cq-summary.pdf`
 	- `reports/aa-summary.html`
 	- `reports/aa-summary.csv`
+	- `reports/aa-summary.xls`
+	- `reports/aa-summary.pdf`
 
 Download artifacts from the GitHub Actions run summary page.

@@ -13,14 +13,15 @@ test("readAutoAttendantCsv parses rows from sample AA CSV", () => {
   assert.equal(rows[0].autoAttendantName, "Main AA");
   assert.equal(rows[0].menuOption, "Sales");
   assert.equal(rows[0].transferDestination, "Sales Queue");
+  assert.equal(rows[0].agentName, "Alice");
   assert.equal(rows[0].timestamp, "2026-06-20T10:00:00Z");
 });
 
 test("buildAutoAttendantSummary returns expected AA metrics", () => {
   const rows = [
-    { autoAttendantName: "Main AA", menuOption: "Sales", transferDestination: "Sales Queue" },
-    { autoAttendantName: "Main AA", menuOption: "Support", transferDestination: "Support Queue" },
-    { autoAttendantName: "After Hours AA", menuOption: "Operator", transferDestination: "Operator Line" }
+    { autoAttendantName: "Main AA", menuOption: "Sales", transferDestination: "Sales Queue", agentName: "Alice" },
+    { autoAttendantName: "Main AA", menuOption: "Support", transferDestination: "Support Queue", agentName: "Bob" },
+    { autoAttendantName: "After Hours AA", menuOption: "Operator", transferDestination: "Operator Line", agentName: "Alice" }
   ];
 
   const summary = buildAutoAttendantSummary(rows);
@@ -39,6 +40,10 @@ test("buildAutoAttendantSummary returns expected AA metrics", () => {
     "Operator Line": 1,
     "Sales Queue": 1,
     "Support Queue": 1
+  });
+  assert.deepEqual(summary.callsAnsweredByAgent, {
+    Alice: 2,
+    Bob: 1
   });
 });
 

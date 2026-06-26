@@ -50,6 +50,9 @@ function readCallQueueCsv(filePath) {
   const queueNameIndex = headers.indexOf("QueueName");
   const waitTimeIndex = headers.indexOf("WaitTimeSeconds");
   const timestampIndex = headers.indexOf("Timestamp");
+  const agentNameIndex = headers.indexOf("AgentName") >= 0
+    ? headers.indexOf("AgentName")
+    : headers.indexOf("AnsweringAgent");
 
   if (queueNameIndex < 0 || waitTimeIndex < 0) {
     throw new Error("CSV is missing required headers: QueueName, WaitTimeSeconds.");
@@ -64,7 +67,8 @@ function readCallQueueCsv(filePath) {
     return {
       queueName,
       waitTimeSeconds: Number.isFinite(waitTimeSeconds) ? waitTimeSeconds : 0,
-      timestamp: timestampIndex >= 0 ? (columns[timestampIndex] || "").trim() : ""
+      timestamp: timestampIndex >= 0 ? (columns[timestampIndex] || "").trim() : "",
+      agentName: agentNameIndex >= 0 ? ((columns[agentNameIndex] || "").trim() || "Unknown") : "Unknown"
     };
   });
 }
@@ -77,11 +81,17 @@ function buildSummary(rows) {
     acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {});
+  const callsAnsweredByAgent = rows.reduce((acc, row) => {
+    const key = row.agentName || "Unknown";
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
 
   return {
     totalCalls,
     averageWaitTimeSeconds: totalCalls > 0 ? Math.round(totalWaitTime / totalCalls) : 0,
-    callsPerQueue
+    callsPerQueue,
+    callsAnsweredByAgent
   };
 }
 

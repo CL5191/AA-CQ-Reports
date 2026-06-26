@@ -12,17 +12,19 @@ test("readCallQueueCsv parses queue rows from sample CSV", () => {
   assert.equal(rows.length, 5);
   assert.equal(rows[0].queueName, "Sales");
   assert.equal(rows[0].waitTimeSeconds, 12);
+  assert.equal(rows[0].agentName, "Alice");
   assert.equal(rows[0].timestamp, "2026-06-20T10:00:00Z");
   assert.equal(rows[4].queueName, "Support");
   assert.equal(rows[4].waitTimeSeconds, 0);
+  assert.equal(rows[4].agentName, "Eli");
   assert.equal(rows[4].timestamp, "2026-06-20T10:04:00Z");
 });
 
 test("buildSummary returns total calls, average wait, and calls per queue", () => {
   const rows = [
-    { queueName: "Sales", waitTimeSeconds: 10 },
-    { queueName: "Sales", waitTimeSeconds: 30 },
-    { queueName: "Support", waitTimeSeconds: 20 }
+    { queueName: "Sales", waitTimeSeconds: 10, agentName: "Alice" },
+    { queueName: "Sales", waitTimeSeconds: 30, agentName: "Bob" },
+    { queueName: "Support", waitTimeSeconds: 20, agentName: "Alice" }
   ];
 
   const summary = buildSummary(rows);
@@ -32,6 +34,10 @@ test("buildSummary returns total calls, average wait, and calls per queue", () =
   assert.deepEqual(summary.callsPerQueue, {
     Sales: 2,
     Support: 1
+  });
+  assert.deepEqual(summary.callsAnsweredByAgent, {
+    Alice: 2,
+    Bob: 1
   });
 });
 

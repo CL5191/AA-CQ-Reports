@@ -12,6 +12,8 @@ All notable changes to this project are documented in this file.
 - CI sample report artifact publishing for each run.
 - CLI hardening for unknown flags, missing option values, and source/file mismatch detection.
 - CLI help text support (`--help`, `-h`).
+- Agent answered-call rollups for CQ and AA summaries (`Calls Answered By Agent`).
+- Native downloadable Excel-compatible `.xls` and `.pdf` report formats.
 
 ### Changed
 

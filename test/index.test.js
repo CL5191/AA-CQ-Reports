@@ -133,7 +133,7 @@ test("getUsageText includes key options", () => {
   const usage = getUsageText();
   assert.match(usage, /Usage:/);
   assert.match(usage, /--source cq\|aa/);
-  assert.match(usage, /--format text\|json\|csv\|html/);
+  assert.match(usage, /--format text\|json\|csv\|html\|xls\|pdf/);
   assert.match(usage, /--help, -h/);
 });
 
@@ -279,7 +279,8 @@ test("renderSummary supports json output", () => {
     {
       totalCalls: 1,
       averageWaitTimeSeconds: 3,
-      callsPerQueue: { Sales: 1 }
+      callsPerQueue: { Sales: 1 },
+      callsAnsweredByAgent: { Alice: 1 }
     },
     "json"
   );
@@ -289,8 +290,8 @@ test("renderSummary supports json output", () => {
 
 test("renderSummary rejects unsupported format", () => {
   assert.throws(
-    () => renderSummary({ totalCalls: 0, averageWaitTimeSeconds: 0, callsPerQueue: {} }, "xml"),
-    /text\|json\|csv\|html/
+    () => renderSummary({ totalCalls: 0, averageWaitTimeSeconds: 0, callsPerQueue: {}, callsAnsweredByAgent: {} }, "xml"),
+    /text\|json\|csv\|html\|xls\|pdf/
   );
 });
 
@@ -299,7 +300,8 @@ test("renderSummary supports csv output", () => {
     {
       totalCalls: 1,
       averageWaitTimeSeconds: 3,
-      callsPerQueue: { Sales: 1 }
+      callsPerQueue: { Sales: 1 },
+      callsAnsweredByAgent: { Alice: 1 }
     },
     "csv"
   );
@@ -307,6 +309,7 @@ test("renderSummary supports csv output", () => {
   assert.match(output, /^Metric,Value/m);
   assert.match(output, /TotalCalls,1/);
   assert.match(output, /CallsPerQueue\.Sales,1/);
+  assert.match(output, /CallsAnsweredByAgent\.Alice,1/);
 });
 
 test("renderSummary supports AA text output", () => {
@@ -315,7 +318,8 @@ test("renderSummary supports AA text output", () => {
       totalCalls: 2,
       callsPerAutoAttendant: { "Main AA": 2 },
       menuSelections: { Sales: 2 },
-      transfersByDestination: { "Sales Queue": 2 }
+      transfersByDestination: { "Sales Queue": 2 },
+      callsAnsweredByAgent: { Alice: 2 }
     },
     "text",
     "aa"
@@ -323,6 +327,7 @@ test("renderSummary supports AA text output", () => {
 
   assert.match(output, /Auto Attendant Summary/);
   assert.match(output, /Main AA: 2/);
+  assert.match(output, /Calls Answered By Agent/);
 });
 
 test("renderSummary supports CQ html output", () => {
@@ -330,7 +335,8 @@ test("renderSummary supports CQ html output", () => {
     {
       totalCalls: 1,
       averageWaitTimeSeconds: 3,
-      callsPerQueue: { Sales: 1 }
+      callsPerQueue: { Sales: 1 },
+      callsAnsweredByAgent: { Alice: 1 }
     },
     "html",
     "cq"
@@ -346,7 +352,8 @@ test("renderSummary supports AA html output", () => {
       totalCalls: 1,
       callsPerAutoAttendant: { "Main AA": 1 },
       menuSelections: { Sales: 1 },
-      transfersByDestination: { "Sales Queue": 1 }
+      transfersByDestination: { "Sales Queue": 1 },
+      callsAnsweredByAgent: { Alice: 1 }
     },
     "html",
     "aa"
@@ -354,4 +361,37 @@ test("renderSummary supports AA html output", () => {
 
   assert.match(output, /<!doctype html>/i);
   assert.match(output, /Auto Attendant Summary/);
+});
+
+test("renderSummary supports CQ xls output", () => {
+  const output = renderSummary(
+    {
+      totalCalls: 1,
+      averageWaitTimeSeconds: 3,
+      callsPerQueue: { Sales: 1 },
+      callsAnsweredByAgent: { Alice: 1 }
+    },
+    "xls",
+    "cq"
+  );
+
+  assert.equal(Buffer.isBuffer(output), true);
+  assert.match(output.toString("utf8"), /<Workbook/);
+});
+
+test("renderSummary supports AA pdf output", () => {
+  const output = renderSummary(
+    {
+      totalCalls: 1,
+      callsPerAutoAttendant: { "Main AA": 1 },
+      menuSelections: { Sales: 1 },
+      transfersByDestination: { "Sales Queue": 1 },
+      callsAnsweredByAgent: { Alice: 1 }
+    },
+    "pdf",
+    "aa"
+  );
+
+  assert.equal(Buffer.isBuffer(output), true);
+  assert.equal(output.subarray(0, 4).toString("utf8"), "%PDF");
 });

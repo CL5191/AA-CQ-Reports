@@ -1,6 +1,6 @@
-CallId,AutoAttendantName,MenuOption,TransferDestination,Timestamp
-2001,Main AA,Sales,Sales Queue,2026-06-20T10:00:00Z
-2002,Main AA,Support,Support Queue,2026-06-20T10:01:00Z
-2003,Main AA,Support,Support Queue,2026-06-20T10:02:00Z
-2004,After Hours AA,Operator,Operator Line,2026-06-20T10:03:00Z
-2005,After Hours AA,Support,Support Queue,2026-06-20T10:04:00Z
+CallId,AutoAttendantName,MenuOption,TransferDestination,AgentName,Timestamp
+2001,Main AA,Sales,Sales Queue,Alice,2026-06-20T10:00:00Z
+2002,Main AA,Support,Support Queue,Bob,2026-06-20T10:01:00Z
+2003,Main AA,Support,Support Queue,Bob,2026-06-20T10:02:00Z
+2004,After Hours AA,Operator,Operator Line,Chris,2026-06-20T10:03:00Z
+2005,After Hours AA,Support,Support Queue,Dana,2026-06-20T10:04:00Z

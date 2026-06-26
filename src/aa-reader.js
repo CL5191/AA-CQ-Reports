@@ -51,6 +51,9 @@ function readAutoAttendantCsv(filePath) {
   const menuOptionIndex = headers.indexOf("MenuOption");
   const transferDestinationIndex = headers.indexOf("TransferDestination");
   const timestampIndex = headers.indexOf("Timestamp");
+  const agentNameIndex = headers.indexOf("AgentName") >= 0
+    ? headers.indexOf("AgentName")
+    : headers.indexOf("AnsweringAgent");
 
   if (autoAttendantNameIndex < 0 || menuOptionIndex < 0 || transferDestinationIndex < 0) {
     throw new Error("CSV is missing required headers: AutoAttendantName, MenuOption, TransferDestination.");
@@ -63,7 +66,8 @@ function readAutoAttendantCsv(filePath) {
       autoAttendantName: (columns[autoAttendantNameIndex] || "Unknown").trim() || "Unknown",
       menuOption: (columns[menuOptionIndex] || "Unknown").trim() || "Unknown",
       transferDestination: (columns[transferDestinationIndex] || "Unknown").trim() || "Unknown",
-      timestamp: timestampIndex >= 0 ? (columns[timestampIndex] || "").trim() : ""
+      timestamp: timestampIndex >= 0 ? (columns[timestampIndex] || "").trim() : "",
+      agentName: agentNameIndex >= 0 ? ((columns[agentNameIndex] || "").trim() || "Unknown") : "Unknown"
     };
   });
 }
@@ -73,18 +77,21 @@ function buildAutoAttendantSummary(rows) {
   const callsPerAutoAttendant = {};
   const menuSelections = {};
   const transfersByDestination = {};
+  const callsAnsweredByAgent = {};
 
   for (const row of rows) {
     callsPerAutoAttendant[row.autoAttendantName] = (callsPerAutoAttendant[row.autoAttendantName] || 0) + 1;
     menuSelections[row.menuOption] = (menuSelections[row.menuOption] || 0) + 1;
     transfersByDestination[row.transferDestination] = (transfersByDestination[row.transferDestination] || 0) + 1;
+    callsAnsweredByAgent[row.agentName || "Unknown"] = (callsAnsweredByAgent[row.agentName || "Unknown"] || 0) + 1;
   }
 
   return {
     totalCalls,
     callsPerAutoAttendant,
     menuSelections,
-    transfersByDestination
+    transfersByDestination,
+    callsAnsweredByAgent
   };
 }
 

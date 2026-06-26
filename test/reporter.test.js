@@ -5,10 +5,14 @@ const {
   formatSummaryJson,
   formatSummaryCsv,
   formatSummaryHtml,
+  formatSummaryXls,
+  formatSummaryPdf,
   formatAutoAttendantSummaryText,
   formatAutoAttendantSummaryJson,
   formatAutoAttendantSummaryCsv,
-  formatAutoAttendantSummaryHtml
+  formatAutoAttendantSummaryHtml,
+  formatAutoAttendantSummaryXls,
+  formatAutoAttendantSummaryPdf
 } = require("../src/reporter");
 
 test("formatSummaryText renders human-readable metrics", () => {
@@ -18,6 +22,10 @@ test("formatSummaryText renders human-readable metrics", () => {
     callsPerQueue: {
       Support: 3,
       Sales: 1
+    },
+    callsAnsweredByAgent: {
+      Alice: 2,
+      Bob: 2
     }
   });
 
@@ -26,6 +34,8 @@ test("formatSummaryText renders human-readable metrics", () => {
   assert.match(output, /Average Wait Time \(seconds\): 11/);
   assert.match(output, /- Sales: 1/);
   assert.match(output, /- Support: 3/);
+  assert.match(output, /Calls Answered By Agent:/);
+  assert.match(output, /- Alice: 2/);
 });
 
 test("formatSummaryJson renders the summary object as JSON", () => {
@@ -34,6 +44,9 @@ test("formatSummaryJson renders the summary object as JSON", () => {
     averageWaitTimeSeconds: 15,
     callsPerQueue: {
       Sales: 2
+    },
+    callsAnsweredByAgent: {
+      Alice: 2
     }
   };
 
@@ -48,6 +61,10 @@ test("formatSummaryCsv renders summary rows as CSV", () => {
     callsPerQueue: {
       Support: 1,
       Sales: 1
+    },
+    callsAnsweredByAgent: {
+      Alice: 1,
+      Bob: 1
     }
   });
 
@@ -57,6 +74,8 @@ test("formatSummaryCsv renders summary rows as CSV", () => {
   assert.equal(lines[2], "AverageWaitTimeSeconds,15");
   assert.equal(lines[3], "CallsPerQueue.Sales,1");
   assert.equal(lines[4], "CallsPerQueue.Support,1");
+  assert.equal(lines[5], "CallsAnsweredByAgent.Alice,1");
+  assert.equal(lines[6], "CallsAnsweredByAgent.Bob,1");
 });
 
 test("formatAutoAttendantSummaryText renders AA-specific metrics", () => {
@@ -73,6 +92,10 @@ test("formatAutoAttendantSummaryText renders AA-specific metrics", () => {
     transfersByDestination: {
       "Support Queue": 2,
       "Operator Line": 1
+    },
+    callsAnsweredByAgent: {
+      Alice: 2,
+      Bob: 1
     }
   });
 
@@ -81,6 +104,8 @@ test("formatAutoAttendantSummaryText renders AA-specific metrics", () => {
   assert.match(output, /- Main AA: 2/);
   assert.match(output, /- Operator: 1/);
   assert.match(output, /- Support Queue: 2/);
+  assert.match(output, /Calls Answered By Agent:/);
+  assert.match(output, /- Alice: 2/);
 });
 
 test("formatAutoAttendantSummaryJson renders AA summary object as JSON", () => {
@@ -88,7 +113,8 @@ test("formatAutoAttendantSummaryJson renders AA summary object as JSON", () => {
     totalCalls: 2,
     callsPerAutoAttendant: { "Main AA": 2 },
     menuSelections: { Sales: 2 },
-    transfersByDestination: { "Sales Queue": 2 }
+    transfersByDestination: { "Sales Queue": 2 },
+    callsAnsweredByAgent: { Alice: 2 }
   };
 
   const output = formatAutoAttendantSummaryJson(summary);
@@ -100,7 +126,8 @@ test("formatAutoAttendantSummaryCsv renders AA summary rows as CSV", () => {
     totalCalls: 2,
     callsPerAutoAttendant: { "Main AA": 2 },
     menuSelections: { Sales: 2 },
-    transfersByDestination: { "Sales Queue": 2 }
+    transfersByDestination: { "Sales Queue": 2 },
+    callsAnsweredByAgent: { Alice: 2 }
   });
 
   const lines = output.split("\n");
@@ -109,6 +136,7 @@ test("formatAutoAttendantSummaryCsv renders AA summary rows as CSV", () => {
   assert.equal(lines[2], "CallsPerAutoAttendant.Main AA,2");
   assert.equal(lines[3], "MenuSelections.Sales,2");
   assert.equal(lines[4], "TransfersByDestination.Sales Queue,2");
+  assert.equal(lines[5], "CallsAnsweredByAgent.Alice,2");
 });
 
 test("formatSummaryHtml renders HTML for CQ summary", () => {
@@ -118,6 +146,10 @@ test("formatSummaryHtml renders HTML for CQ summary", () => {
     callsPerQueue: {
       Sales: 1,
       Support: 1
+    },
+    callsAnsweredByAgent: {
+      Alice: 1,
+      Bob: 1
     }
   });
 
@@ -125,6 +157,7 @@ test("formatSummaryHtml renders HTML for CQ summary", () => {
   assert.match(output, /<h1>AA-CQ Summary<\/h1>/);
   assert.match(output, /Average Wait Time \(seconds\)/);
   assert.match(output, /Sales/);
+  assert.match(output, /Calls Answered By Agent/);
 });
 
 test("formatAutoAttendantSummaryHtml renders HTML for AA summary", () => {
@@ -132,11 +165,63 @@ test("formatAutoAttendantSummaryHtml renders HTML for AA summary", () => {
     totalCalls: 2,
     callsPerAutoAttendant: { "Main AA": 2 },
     menuSelections: { Sales: 2 },
-    transfersByDestination: { "Sales Queue": 2 }
+    transfersByDestination: { "Sales Queue": 2 },
+    callsAnsweredByAgent: { Alice: 2 }
   });
 
   assert.match(output, /<!doctype html>/i);
   assert.match(output, /<h1>Auto Attendant Summary<\/h1>/);
   assert.match(output, /Calls Per Auto Attendant/);
   assert.match(output, /Sales Queue/);
+  assert.match(output, /Calls Answered By Agent/);
+});
+
+test("formatSummaryXls renders excel workbook xml", () => {
+  const output = formatSummaryXls({
+    totalCalls: 2,
+    averageWaitTimeSeconds: 15,
+    callsPerQueue: { Sales: 2 },
+    callsAnsweredByAgent: { Alice: 2 }
+  });
+
+  const text = output.toString("utf8");
+  assert.match(text, /<Workbook/);
+  assert.match(text, /CallsAnsweredByAgent\.Alice/);
+});
+
+test("formatSummaryPdf renders pdf bytes", () => {
+  const output = formatSummaryPdf({
+    totalCalls: 2,
+    averageWaitTimeSeconds: 15,
+    callsPerQueue: { Sales: 2 },
+    callsAnsweredByAgent: { Alice: 2 }
+  });
+
+  assert.equal(output.subarray(0, 4).toString("utf8"), "%PDF");
+});
+
+test("formatAutoAttendantSummaryXls renders excel workbook xml", () => {
+  const output = formatAutoAttendantSummaryXls({
+    totalCalls: 2,
+    callsPerAutoAttendant: { "Main AA": 2 },
+    menuSelections: { Sales: 2 },
+    transfersByDestination: { "Sales Queue": 2 },
+    callsAnsweredByAgent: { Alice: 2 }
+  });
+
+  const text = output.toString("utf8");
+  assert.match(text, /<Workbook/);
+  assert.match(text, /CallsAnsweredByAgent\.Alice/);
+});
+
+test("formatAutoAttendantSummaryPdf renders pdf bytes", () => {
+  const output = formatAutoAttendantSummaryPdf({
+    totalCalls: 2,
+    callsPerAutoAttendant: { "Main AA": 2 },
+    menuSelections: { Sales: 2 },
+    transfersByDestination: { "Sales Queue": 2 },
+    callsAnsweredByAgent: { Alice: 2 }
+  });
+
+  assert.equal(output.subarray(0, 4).toString("utf8"), "%PDF");
 });
