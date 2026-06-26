@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
+const { readCallQueueCsv } = require("../src/csv-reader");
 const {
   hello,
   formatSummary,
@@ -10,7 +11,9 @@ const {
   renderSummary,
   readRowsFromCsvFiles,
   filterRowsByTimestamp,
-  writeOutput
+  writeOutput,
+  validateSourceForFiles,
+  validateRows
 } = require("../src/index");
 
 test("hello uses default value", () => {
@@ -106,6 +109,34 @@ test("parseCliArgs supports output and timestamp filters", () => {
   });
 });
 
+test("parseCliArgs rejects unknown options", () => {
+  assert.throws(
+    () => parseCliArgs(["data/sample-cq.csv", "--bogus"]),
+    /Unknown option: --bogus/
+  );
+});
+
+test("parseCliArgs rejects missing option values", () => {
+  assert.throws(
+    () => parseCliArgs(["data/sample-cq.csv", "--format"]),
+    /Missing value for --format/
+  );
+});
+
+test("parseCliArgs validates allowed format values", () => {
+  assert.throws(
+    () => parseCliArgs(["data/sample-cq.csv", "--format", "xml"]),
+    /Invalid format: xml/
+  );
+});
+
+test("parseCliArgs validates allowed source values", () => {
+  assert.throws(
+    () => parseCliArgs(["data/sample-cq.csv", "--source", "other"]),
+    /Invalid source: other/
+  );
+});
+
 test("readRowsFromCsvFiles combines rows from all files", () => {
   const rows = readRowsFromCsvFiles(["first.csv", "second.csv"], (filePath) => {
     if (filePath === "first.csv") {
@@ -146,6 +177,60 @@ test("filterRowsByTimestamp validates range ordering", () => {
     () => filterRowsByTimestamp([], "2026-06-20T10:03:00Z", "2026-06-20T10:01:00Z"),
     /--from must be earlier than or equal to --to/
   );
+});
+
+test("filterRowsByTimestamp rejects rows without timestamps when filtering", () => {
+  assert.throws(
+    () => filterRowsByTimestamp([{ id: 1, timestamp: "" }], "2026-06-20", null),
+    /Timestamp column with valid values is required/
+  );
+});
+
+test("filterRowsByTimestamp rejects malformed row timestamps when filtering", () => {
+  assert.throws(
+    () => filterRowsByTimestamp([{ id: 1, timestamp: "not-a-date" }], "2026-06-20", null),
+    /Invalid row timestamp value: not-a-date/
+  );
+});
+
+test("validateSourceForFiles catches mixed-source mistakes", () => {
+  const aaFilePath = path.join(__dirname, "..", "data", "sample-aa.csv");
+
+  assert.throws(
+    () => validateSourceForFiles([aaFilePath], "cq"),
+    /Input source mismatch/
+  );
+});
+
+test("validateRows rejects empty data without range filters", () => {
+  assert.throws(
+    () => validateRows([], null, null),
+    /No data rows found in the provided CSV input/
+  );
+});
+
+test("validateRows rejects empty data caused by range filtering", () => {
+  assert.throws(
+    () => validateRows([], "2026-06-20T11:00:00Z", "2026-06-20T11:01:00Z"),
+    /No rows matched the provided --from\/--to range/
+  );
+});
+
+test("header-only csv triggers empty-data validation path", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "aa-cq-empty-data-"));
+  const filePath = path.join(tempDir, "header-only.csv");
+
+  try {
+    fs.writeFileSync(filePath, "QueueName,WaitTimeSeconds,Timestamp\n", "utf8");
+    const rows = readRowsFromCsvFiles([filePath], readCallQueueCsv);
+
+    assert.throws(
+      () => validateRows(rows, null, null),
+      /No data rows found in the provided CSV input/
+    );
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
 });
 
 test("writeOutput writes report to nested path", () => {

@@ -21,6 +21,18 @@ function formatSummary(summary) {
   return formatSummaryText(summary);
 }
 
+const VALID_FORMATS = new Set(["text", "json", "csv", "html"]);
+const VALID_SOURCES = new Set(["cq", "aa"]);
+
+function readOptionValue(argv, i, optionName) {
+  const value = argv[i + 1];
+  if (!value || value.startsWith("--")) {
+    throw new Error(`Missing value for ${optionName}.`);
+  }
+
+  return value;
+}
+
 function parseCliArgs(argv) {
   const csvPaths = [];
   let format = "text";
@@ -33,39 +45,81 @@ function parseCliArgs(argv) {
     const arg = argv[i];
 
     if (arg === "--format") {
-      format = (argv[i + 1] || "").toLowerCase();
+      format = readOptionValue(argv, i, "--format").toLowerCase();
       i += 1;
       continue;
     }
 
     if (arg === "--source") {
-      source = (argv[i + 1] || "").toLowerCase();
+      source = readOptionValue(argv, i, "--source").toLowerCase();
       i += 1;
       continue;
     }
 
     if (arg === "--out") {
-      outFilePath = argv[i + 1] || null;
+      outFilePath = readOptionValue(argv, i, "--out");
       i += 1;
       continue;
     }
 
     if (arg === "--from") {
-      from = argv[i + 1] || null;
+      from = readOptionValue(argv, i, "--from");
       i += 1;
       continue;
     }
 
     if (arg === "--to") {
-      to = argv[i + 1] || null;
+      to = readOptionValue(argv, i, "--to");
       i += 1;
       continue;
+    }
+
+    if (arg.startsWith("--")) {
+      throw new Error(`Unknown option: ${arg}`);
     }
 
     csvPaths.push(arg);
   }
 
+  if (!VALID_FORMATS.has(format)) {
+    throw new Error(`Invalid format: ${format}. Use --format text|json|csv|html.`);
+  }
+
+  if (!VALID_SOURCES.has(source)) {
+    throw new Error(`Invalid source: ${source}. Use --source cq|aa.`);
+  }
+
   return { csvPaths, format, source, outFilePath, from, to };
+}
+
+function detectSourceFromHeaders(headers) {
+  const headerSet = new Set(headers.map((header) => header.trim()));
+  const isCq = headerSet.has("QueueName") && headerSet.has("WaitTimeSeconds");
+  const isAa = headerSet.has("AutoAttendantName") && headerSet.has("MenuOption") && headerSet.has("TransferDestination");
+
+  if (isCq) {
+    return "cq";
+  }
+
+  if (isAa) {
+    return "aa";
+  }
+
+  return null;
+}
+
+function validateSourceForFiles(filePaths, source) {
+  for (const filePath of filePaths) {
+    const normalizedPath = path.resolve(filePath);
+    const csvText = fs.readFileSync(normalizedPath, "utf8");
+    const [headerLine = ""] = csvText.split(/\r?\n/, 1);
+    const headers = headerLine.split(",").map((header) => header.trim()).filter(Boolean);
+    const detectedSource = detectSourceFromHeaders(headers);
+
+    if (detectedSource && detectedSource !== source) {
+      throw new Error(`Input source mismatch for ${filePath}. Use --source ${detectedSource}.`);
+    }
+  }
 }
 
 function parseDateBoundary(value, label, endOfDay = false) {
@@ -105,12 +159,12 @@ function filterRowsByTimestamp(rows, from, to) {
 
   return rows.filter((row) => {
     if (!row.timestamp) {
-      return false;
+      throw new Error("Timestamp column with valid values is required when using --from/--to.");
     }
 
     const timestamp = new Date(row.timestamp);
     if (Number.isNaN(timestamp.getTime())) {
-      return false;
+      throw new Error(`Invalid row timestamp value: ${row.timestamp}`);
     }
 
     if (fromDate && timestamp < fromDate) {
@@ -123,6 +177,18 @@ function filterRowsByTimestamp(rows, from, to) {
 
     return true;
   });
+}
+
+function validateRows(rows, from, to) {
+  if (rows.length > 0) {
+    return;
+  }
+
+  if (from || to) {
+    throw new Error("No rows matched the provided --from/--to range.");
+  }
+
+  throw new Error("No data rows found in the provided CSV input.");
 }
 
 function writeOutput(output, outFilePath) {
@@ -195,13 +261,16 @@ if (require.main === module) {
   } else {
     try {
       let output;
+      validateSourceForFiles(csvPaths, source);
 
       if (source === "aa") {
         const rows = filterRowsByTimestamp(readRowsFromCsvFiles(csvPaths, readAutoAttendantCsv), from, to);
+        validateRows(rows, from, to);
         const summary = buildAutoAttendantSummary(rows);
         output = renderSummary(summary, format, source);
       } else if (source === "cq") {
         const rows = filterRowsByTimestamp(readRowsFromCsvFiles(csvPaths, readCallQueueCsv), from, to);
+        validateRows(rows, from, to);
         const summary = buildSummary(rows);
         output = renderSummary(summary, format, source);
       } else {
@@ -228,5 +297,7 @@ module.exports = {
   renderSummary,
   readRowsFromCsvFiles,
   filterRowsByTimestamp,
-  writeOutput
+  writeOutput,
+  validateSourceForFiles,
+  validateRows
 };
