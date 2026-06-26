@@ -39,6 +39,15 @@ test("buildSummary returns total calls, average wait, and calls per queue", () =
     Alice: 2,
     Bob: 1
   });
+  assert.deepEqual(summary.callsAnsweredByQueueAndAgent, {
+    Sales: {
+      Alice: 1,
+      Bob: 1
+    },
+    Support: {
+      Alice: 1
+    }
+  });
 });
 
 test("readCallQueueCsv validates required file path", () => {

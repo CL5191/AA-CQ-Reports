@@ -78,12 +78,24 @@ function buildAutoAttendantSummary(rows) {
   const menuSelections = {};
   const transfersByDestination = {};
   const callsAnsweredByAgent = {};
+  const callsAnsweredByAutoAttendantAndAgent = {};
 
   for (const row of rows) {
     callsPerAutoAttendant[row.autoAttendantName] = (callsPerAutoAttendant[row.autoAttendantName] || 0) + 1;
     menuSelections[row.menuOption] = (menuSelections[row.menuOption] || 0) + 1;
     transfersByDestination[row.transferDestination] = (transfersByDestination[row.transferDestination] || 0) + 1;
-    callsAnsweredByAgent[row.agentName || "Unknown"] = (callsAnsweredByAgent[row.agentName || "Unknown"] || 0) + 1;
+
+    const agentKey = row.agentName && row.agentName !== "Unknown" ? row.agentName : null;
+    if (agentKey) {
+      callsAnsweredByAgent[agentKey] = (callsAnsweredByAgent[agentKey] || 0) + 1;
+
+      if (!callsAnsweredByAutoAttendantAndAgent[row.autoAttendantName]) {
+        callsAnsweredByAutoAttendantAndAgent[row.autoAttendantName] = {};
+      }
+
+      callsAnsweredByAutoAttendantAndAgent[row.autoAttendantName][agentKey] =
+        (callsAnsweredByAutoAttendantAndAgent[row.autoAttendantName][agentKey] || 0) + 1;
+    }
   }
 
   return {
@@ -91,7 +103,8 @@ function buildAutoAttendantSummary(rows) {
     callsPerAutoAttendant,
     menuSelections,
     transfersByDestination,
-    callsAnsweredByAgent
+    callsAnsweredByAgent,
+    callsAnsweredByAutoAttendantAndAgent
   };
 }
 

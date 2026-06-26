@@ -45,6 +45,15 @@ test("buildAutoAttendantSummary returns expected AA metrics", () => {
     Alice: 2,
     Bob: 1
   });
+  assert.deepEqual(summary.callsAnsweredByAutoAttendantAndAgent, {
+    "After Hours AA": {
+      Alice: 1
+    },
+    "Main AA": {
+      Alice: 1,
+      Bob: 1
+    }
+  });
 });
 
 test("readAutoAttendantCsv validates required file path", () => {

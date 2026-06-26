@@ -14,6 +14,7 @@ All notable changes to this project are documented in this file.
 - CLI help text support (`--help`, `-h`).
 - Agent answered-call rollups for CQ and AA summaries (`Calls Answered By Agent`).
 - Native downloadable Excel-compatible `.xls` and `.pdf` report formats.
+- Added detailed answered-call breakdowns by AA/CQ and agent pairing.
 
 ### Changed
 

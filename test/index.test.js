@@ -280,7 +280,8 @@ test("renderSummary supports json output", () => {
       totalCalls: 1,
       averageWaitTimeSeconds: 3,
       callsPerQueue: { Sales: 1 },
-      callsAnsweredByAgent: { Alice: 1 }
+      callsAnsweredByAgent: { Alice: 1 },
+      callsAnsweredByQueueAndAgent: { Sales: { Alice: 1 } }
     },
     "json"
   );
@@ -301,7 +302,8 @@ test("renderSummary supports csv output", () => {
       totalCalls: 1,
       averageWaitTimeSeconds: 3,
       callsPerQueue: { Sales: 1 },
-      callsAnsweredByAgent: { Alice: 1 }
+      callsAnsweredByAgent: { Alice: 1 },
+      callsAnsweredByQueueAndAgent: { Sales: { Alice: 1 } }
     },
     "csv"
   );
@@ -310,6 +312,7 @@ test("renderSummary supports csv output", () => {
   assert.match(output, /TotalCalls,1/);
   assert.match(output, /CallsPerQueue\.Sales,1/);
   assert.match(output, /CallsAnsweredByAgent\.Alice,1/);
+  assert.match(output, /CallsAnsweredByQueueAndAgent\.Sales\.Alice,1/);
 });
 
 test("renderSummary supports AA text output", () => {
@@ -319,7 +322,8 @@ test("renderSummary supports AA text output", () => {
       callsPerAutoAttendant: { "Main AA": 2 },
       menuSelections: { Sales: 2 },
       transfersByDestination: { "Sales Queue": 2 },
-      callsAnsweredByAgent: { Alice: 2 }
+      callsAnsweredByAgent: { Alice: 2 },
+      callsAnsweredByAutoAttendantAndAgent: { "Main AA": { Alice: 2 } }
     },
     "text",
     "aa"
@@ -336,7 +340,8 @@ test("renderSummary supports CQ html output", () => {
       totalCalls: 1,
       averageWaitTimeSeconds: 3,
       callsPerQueue: { Sales: 1 },
-      callsAnsweredByAgent: { Alice: 1 }
+      callsAnsweredByAgent: { Alice: 1 },
+      callsAnsweredByQueueAndAgent: { Sales: { Alice: 1 } }
     },
     "html",
     "cq"
@@ -353,7 +358,8 @@ test("renderSummary supports AA html output", () => {
       callsPerAutoAttendant: { "Main AA": 1 },
       menuSelections: { Sales: 1 },
       transfersByDestination: { "Sales Queue": 1 },
-      callsAnsweredByAgent: { Alice: 1 }
+      callsAnsweredByAgent: { Alice: 1 },
+      callsAnsweredByAutoAttendantAndAgent: { "Main AA": { Alice: 1 } }
     },
     "html",
     "aa"
@@ -369,7 +375,8 @@ test("renderSummary supports CQ xls output", () => {
       totalCalls: 1,
       averageWaitTimeSeconds: 3,
       callsPerQueue: { Sales: 1 },
-      callsAnsweredByAgent: { Alice: 1 }
+      callsAnsweredByAgent: { Alice: 1 },
+      callsAnsweredByQueueAndAgent: { Sales: { Alice: 1 } }
     },
     "xls",
     "cq"
@@ -386,7 +393,8 @@ test("renderSummary supports AA pdf output", () => {
       callsPerAutoAttendant: { "Main AA": 1 },
       menuSelections: { Sales: 1 },
       transfersByDestination: { "Sales Queue": 1 },
-      callsAnsweredByAgent: { Alice: 1 }
+      callsAnsweredByAgent: { Alice: 1 },
+      callsAnsweredByAutoAttendantAndAgent: { "Main AA": { Alice: 1 } }
     },
     "pdf",
     "aa"

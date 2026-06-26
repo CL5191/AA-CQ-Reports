@@ -59,6 +59,12 @@ CLI options:
 - `--to <timestamp>` includes rows on/before the timestamp.
 - `--help` or `-h` prints usage guidance.
 
+Report content includes:
+
+- Summary totals and wait-time metrics.
+- Calls answered by agent (overall).
+- Calls answered by AA/CQ and agent pair (for example, `Queue -> Agent` and `Auto Attendant -> Agent`).
+
 Run checks:
 
 ```bash

@@ -82,8 +82,26 @@ function buildSummary(rows) {
     return acc;
   }, {});
   const callsAnsweredByAgent = rows.reduce((acc, row) => {
-    const key = row.agentName || "Unknown";
+    const key = row.agentName && row.agentName !== "Unknown" ? row.agentName : null;
+    if (!key) {
+      return acc;
+    }
     acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  const callsAnsweredByQueueAndAgent = rows.reduce((acc, row) => {
+    const queueKey = row.queueName || "Unknown";
+    const agentKey = row.agentName && row.agentName !== "Unknown" ? row.agentName : null;
+
+    if (!agentKey) {
+      return acc;
+    }
+
+    if (!acc[queueKey]) {
+      acc[queueKey] = {};
+    }
+
+    acc[queueKey][agentKey] = (acc[queueKey][agentKey] || 0) + 1;
     return acc;
   }, {});
 
@@ -91,7 +109,8 @@ function buildSummary(rows) {
     totalCalls,
     averageWaitTimeSeconds: totalCalls > 0 ? Math.round(totalWaitTime / totalCalls) : 0,
     callsPerQueue,
-    callsAnsweredByAgent
+    callsAnsweredByAgent,
+    callsAnsweredByQueueAndAgent
   };
 }
 

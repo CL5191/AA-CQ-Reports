@@ -7,6 +7,12 @@ function formatSummaryText(summary) {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([agent, calls]) => `- ${agent}: ${calls}`)
     .join("\n");
+  const queueAgentLines = Object.entries(summary.callsAnsweredByQueueAndAgent || {})
+    .sort(([a], [b]) => a.localeCompare(b))
+    .flatMap(([queue, agents]) => Object.entries(agents)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([agent, calls]) => `- ${queue} -> ${agent}: ${calls}`))
+    .join("\n");
 
   return [
     "AA-CQ Summary",
@@ -15,7 +21,9 @@ function formatSummaryText(summary) {
     "Calls Per Queue:",
     queueLines || "- None",
     "Calls Answered By Agent:",
-    agentLines || "- None"
+    agentLines || "- None",
+    "Calls Answered By Queue And Agent:",
+    queueAgentLines || "- None"
   ].join("\n");
 }
 
@@ -45,6 +53,12 @@ function formatSummaryCsv(summary) {
 
   for (const [agent, calls] of Object.entries(summary.callsAnsweredByAgent || {}).sort(([a], [b]) => a.localeCompare(b))) {
     rows.push([`CallsAnsweredByAgent.${agent}`, calls]);
+  }
+
+  for (const [queue, agents] of Object.entries(summary.callsAnsweredByQueueAndAgent || {}).sort(([a], [b]) => a.localeCompare(b))) {
+    for (const [agent, calls] of Object.entries(agents).sort(([a], [b]) => a.localeCompare(b))) {
+      rows.push([`CallsAnsweredByQueueAndAgent.${queue}.${agent}`, calls]);
+    }
   }
 
   return rows
@@ -91,6 +105,11 @@ function formatSummaryHtml(summary) {
     .sort(([a], [b]) => a.localeCompare(b));
   const agentRows = Object.entries(summary.callsAnsweredByAgent || {})
     .sort(([a], [b]) => a.localeCompare(b));
+  const queueAgentRows = Object.entries(summary.callsAnsweredByQueueAndAgent || {})
+    .sort(([a], [b]) => a.localeCompare(b))
+    .flatMap(([queue, agents]) => Object.entries(agents)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([agent, calls]) => [`${queue} -> ${agent}`, calls]));
 
   const sections = [
     rowsToHtmlTable("Overview", [
@@ -98,7 +117,8 @@ function formatSummaryHtml(summary) {
       ["Average Wait Time (seconds)", summary.averageWaitTimeSeconds]
     ]),
     rowsToHtmlTable("Calls Per Queue", queueRows.length > 0 ? queueRows : [["None", 0]]),
-    rowsToHtmlTable("Calls Answered By Agent", agentRows.length > 0 ? agentRows : [["None", 0]])
+    rowsToHtmlTable("Calls Answered By Agent", agentRows.length > 0 ? agentRows : [["None", 0]]),
+    rowsToHtmlTable("Calls Answered By Queue And Agent", queueAgentRows.length > 0 ? queueAgentRows : [["None", 0]])
   ];
 
   return buildHtmlDocument("AA-CQ Summary", sections);
@@ -121,6 +141,12 @@ function formatAutoAttendantSummaryText(summary) {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([agent, calls]) => `- ${agent}: ${calls}`)
     .join("\n");
+  const aaAgentLines = Object.entries(summary.callsAnsweredByAutoAttendantAndAgent || {})
+    .sort(([a], [b]) => a.localeCompare(b))
+    .flatMap(([autoAttendant, agents]) => Object.entries(agents)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([agent, calls]) => `- ${autoAttendant} -> ${agent}: ${calls}`))
+    .join("\n");
 
   return [
     "Auto Attendant Summary",
@@ -132,7 +158,9 @@ function formatAutoAttendantSummaryText(summary) {
     "Transfers By Destination:",
     transferLines || "- None",
     "Calls Answered By Agent:",
-    agentLines || "- None"
+    agentLines || "- None",
+    "Calls Answered By Auto Attendant And Agent:",
+    aaAgentLines || "- None"
   ].join("\n");
 }
 
@@ -162,12 +190,24 @@ function formatAutoAttendantSummaryCsv(summary) {
     rows.push([`CallsAnsweredByAgent.${agent}`, calls]);
   }
 
+  for (const [autoAttendant, agents] of Object.entries(summary.callsAnsweredByAutoAttendantAndAgent || {}).sort(([a], [b]) => a.localeCompare(b))) {
+    for (const [agent, calls] of Object.entries(agents).sort(([a], [b]) => a.localeCompare(b))) {
+      rows.push([`CallsAnsweredByAutoAttendantAndAgent.${autoAttendant}.${agent}`, calls]);
+    }
+  }
+
   return rows
     .map((columns) => columns.map(toCsvValue).join(","))
     .join("\n");
 }
 
 function formatAutoAttendantSummaryHtml(summary) {
+  const aaAgentRows = Object.entries(summary.callsAnsweredByAutoAttendantAndAgent || {})
+    .sort(([a], [b]) => a.localeCompare(b))
+    .flatMap(([autoAttendant, agents]) => Object.entries(agents)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([agent, calls]) => [`${autoAttendant} -> ${agent}`, calls]));
+
   const sections = [
     rowsToHtmlTable("Overview", [["Total Calls", summary.totalCalls]]),
     rowsToHtmlTable(
@@ -185,6 +225,10 @@ function formatAutoAttendantSummaryHtml(summary) {
     rowsToHtmlTable(
       "Calls Answered By Agent",
       Object.entries(summary.callsAnsweredByAgent || {}).sort(([a], [b]) => a.localeCompare(b))
+    ),
+    rowsToHtmlTable(
+      "Calls Answered By Auto Attendant And Agent",
+      aaAgentRows.length > 0 ? aaAgentRows : [["None", 0]]
     )
   ];
 
@@ -203,6 +247,12 @@ function toCqMetricRows(summary) {
 
   for (const [agent, calls] of Object.entries(summary.callsAnsweredByAgent || {}).sort(([a], [b]) => a.localeCompare(b))) {
     rows.push([`CallsAnsweredByAgent.${agent}`, calls]);
+  }
+
+  for (const [queue, agents] of Object.entries(summary.callsAnsweredByQueueAndAgent || {}).sort(([a], [b]) => a.localeCompare(b))) {
+    for (const [agent, calls] of Object.entries(agents).sort(([a], [b]) => a.localeCompare(b))) {
+      rows.push([`CallsAnsweredByQueueAndAgent.${queue}.${agent}`, calls]);
+    }
   }
 
   return rows;
@@ -225,6 +275,12 @@ function toAaMetricRows(summary) {
 
   for (const [agent, calls] of Object.entries(summary.callsAnsweredByAgent || {}).sort(([a], [b]) => a.localeCompare(b))) {
     rows.push([`CallsAnsweredByAgent.${agent}`, calls]);
+  }
+
+  for (const [autoAttendant, agents] of Object.entries(summary.callsAnsweredByAutoAttendantAndAgent || {}).sort(([a], [b]) => a.localeCompare(b))) {
+    for (const [agent, calls] of Object.entries(agents).sort(([a], [b]) => a.localeCompare(b))) {
+      rows.push([`CallsAnsweredByAutoAttendantAndAgent.${autoAttendant}.${agent}`, calls]);
+    }
   }
 
   return rows;
