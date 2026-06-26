@@ -31,3 +31,17 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Generate sample report artifacts
+        run: |
+          mkdir -p reports
+          npm start -- data/sample-cq.csv --source cq --format html --out reports/cq-summary.html
+          npm start -- data/sample-cq.csv --source cq --format json --out reports/cq-summary.json
+          npm start -- data/sample-aa.csv --source aa --format html --out reports/aa-summary.html
+          npm start -- data/sample-aa.csv --source aa --format csv --out reports/aa-summary.csv
+
+      - name: Upload report artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: aa-cq-reports-${{ github.run_number }}
+          path: reports/

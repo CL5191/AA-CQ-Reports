@@ -56,3 +56,16 @@ npm run lint
 npm test
 npm run build
 ```
+
+## CI Artifacts
+
+The CI workflow now generates sample report files and uploads them as run artifacts.
+
+- Artifact name format: `aa-cq-reports-<run_number>`
+- Included files:
+	- `reports/cq-summary.html`
+	- `reports/cq-summary.json`
+	- `reports/aa-summary.html`
+	- `reports/aa-summary.csv`
+
+Download artifacts from the GitHub Actions run summary page.
