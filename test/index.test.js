@@ -7,6 +7,7 @@ const { readCallQueueCsv } = require("../src/csv-reader");
 const {
   hello,
   formatSummary,
+  getUsageText,
   parseCliArgs,
   renderSummary,
   readRowsFromCsvFiles,
@@ -48,7 +49,8 @@ test("parseCliArgs reads csv path and format flag", () => {
     source: "cq",
     outFilePath: null,
     from: null,
-    to: null
+    to: null,
+    showHelp: false
   });
 });
 
@@ -60,7 +62,8 @@ test("parseCliArgs supports csv output format", () => {
     source: "cq",
     outFilePath: null,
     from: null,
-    to: null
+    to: null,
+    showHelp: false
   });
 });
 
@@ -72,7 +75,8 @@ test("parseCliArgs supports source selection", () => {
     source: "aa",
     outFilePath: null,
     from: null,
-    to: null
+    to: null,
+    showHelp: false
   });
 });
 
@@ -84,7 +88,8 @@ test("parseCliArgs supports multiple csv inputs", () => {
     source: "cq",
     outFilePath: null,
     from: null,
-    to: null
+    to: null,
+    showHelp: false
   });
 });
 
@@ -105,8 +110,31 @@ test("parseCliArgs supports output and timestamp filters", () => {
     source: "cq",
     outFilePath: "reports/daily.html",
     from: "2026-06-20T10:00:00Z",
-    to: "2026-06-20T10:03:00Z"
+    to: "2026-06-20T10:03:00Z",
+    showHelp: false
   });
+});
+
+test("parseCliArgs supports help flag", () => {
+  const options = parseCliArgs(["--help"]);
+
+  assert.deepEqual(options, {
+    csvPaths: [],
+    format: "text",
+    source: "cq",
+    outFilePath: null,
+    from: null,
+    to: null,
+    showHelp: true
+  });
+});
+
+test("getUsageText includes key options", () => {
+  const usage = getUsageText();
+  assert.match(usage, /Usage:/);
+  assert.match(usage, /--source cq\|aa/);
+  assert.match(usage, /--format text\|json\|csv\|html/);
+  assert.match(usage, /--help, -h/);
 });
 
 test("parseCliArgs rejects unknown options", () => {

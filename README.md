@@ -34,6 +34,9 @@ Example usage:
 # CQ summary in text
 npm start -- data/sample-cq.csv --source cq --format text
 
+# Show CLI help
+npm start -- --help
+
 # AA summary in HTML written to file
 npm start -- data/sample-aa.csv --source aa --format html --out reports/aa-summary.html
 
@@ -48,6 +51,7 @@ CLI options:
 - `--out <path>` writes the rendered report to a file (directories are created automatically).
 - `--from <timestamp>` includes rows on/after the timestamp.
 - `--to <timestamp>` includes rows on/before the timestamp.
+- `--help` or `-h` prints usage guidance.
 
 Run checks:
 
@@ -56,6 +60,20 @@ npm run lint
 npm test
 npm run build
 ```
+
+Generate sample reports locally:
+
+```bash
+npm run generate:sample-reports
+```
+
+## Release Checklist
+
+- Run `npm run lint`, `npm test`, and `npm run build`.
+- Run `npm run generate:sample-reports` and verify `reports/` contents.
+- Update `CHANGELOG.md` with release notes.
+- Bump version in `package.json`.
+- Push to `main` and confirm CI artifact upload.
 
 ## CI Artifacts
 

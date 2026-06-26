@@ -24,6 +24,20 @@ function formatSummary(summary) {
 const VALID_FORMATS = new Set(["text", "json", "csv", "html"]);
 const VALID_SOURCES = new Set(["cq", "aa"]);
 
+function getUsageText() {
+  return [
+    "Usage: npm start -- <path-to-csv> [additional-csv-paths...] [options]",
+    "",
+    "Options:",
+    "  --source cq|aa               Data source type (default: cq)",
+    "  --format text|json|csv|html  Output format (default: text)",
+    "  --out <path>                 Write report output to file",
+    "  --from <timestamp>           Include rows on/after timestamp",
+    "  --to <timestamp>             Include rows on/before timestamp",
+    "  --help, -h                   Show this help message"
+  ].join("\n");
+}
+
 function readOptionValue(argv, i, optionName) {
   const value = argv[i + 1];
   if (!value || value.startsWith("--")) {
@@ -40,6 +54,7 @@ function parseCliArgs(argv) {
   let outFilePath = null;
   let from = null;
   let to = null;
+  let showHelp = false;
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -47,6 +62,11 @@ function parseCliArgs(argv) {
     if (arg === "--format") {
       format = readOptionValue(argv, i, "--format").toLowerCase();
       i += 1;
+      continue;
+    }
+
+    if (arg === "--help" || arg === "-h") {
+      showHelp = true;
       continue;
     }
 
@@ -89,7 +109,7 @@ function parseCliArgs(argv) {
     throw new Error(`Invalid source: ${source}. Use --source cq|aa.`);
   }
 
-  return { csvPaths, format, source, outFilePath, from, to };
+  return { csvPaths, format, source, outFilePath, from, to, showHelp };
 }
 
 function detectSourceFromHeaders(headers) {
@@ -253,10 +273,13 @@ function renderSummary(summary, format, source = "cq") {
 }
 
 if (require.main === module) {
-  const { csvPaths, format, source, outFilePath, from, to } = parseCliArgs(process.argv.slice(2));
+  const { csvPaths, format, source, outFilePath, from, to, showHelp } = parseCliArgs(process.argv.slice(2));
 
-  if (csvPaths.length === 0) {
-    console.error("Usage: npm start <path-to-csv> [additional-csv-paths...] [--source cq|aa] [--format text|json|csv|html]");
+  if (showHelp) {
+    console.log(getUsageText());
+    process.exitCode = 0;
+  } else if (csvPaths.length === 0) {
+    console.error(getUsageText());
     process.exitCode = 1;
   } else {
     try {
@@ -293,6 +316,7 @@ if (require.main === module) {
 module.exports = {
   hello,
   formatSummary,
+  getUsageText,
   parseCliArgs,
   renderSummary,
   readRowsFromCsvFiles,

@@ -5,6 +5,7 @@ npm-debug.log*
 # Coverage and build output
 coverage/
 dist/
+reports/
 
 # Environment and local settings
 .env

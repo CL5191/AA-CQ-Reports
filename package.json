@@ -1,11 +1,12 @@
 {
   "name": "aa-cq-reports",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Comprehensive reporting solution for Teams AA-CQ",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
+    "generate:sample-reports": "node src/index.js data/sample-cq.csv --source cq --format html --out reports/cq-summary.html && node src/index.js data/sample-cq.csv --source cq --format json --out reports/cq-summary.json && node src/index.js data/sample-aa.csv --source aa --format html --out reports/aa-summary.html && node src/index.js data/sample-aa.csv --source aa --format csv --out reports/aa-summary.csv",
     "lint": "node --check src/index.js && node --check src/csv-reader.js && node --check src/aa-reader.js && node --check src/reporter.js && node --check test/index.test.js && node --check test/csv-reader.test.js && node --check test/aa-reader.test.js && node --check test/reporter.test.js",
     "test": "node --test",
     "build": "node -e \"console.log('Build passed')\""
