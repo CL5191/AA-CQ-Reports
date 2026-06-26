@@ -50,6 +50,24 @@ test("buildSummary returns total calls, average wait, and calls per queue", () =
   });
 });
 
+test("buildSummary honors callCount when rows are pre-aggregated", () => {
+  const rows = [
+    { queueName: "Sales", waitTimeSeconds: 0, agentName: "Unknown", callCount: 10 },
+    { queueName: "Support", waitTimeSeconds: 0, agentName: "Unknown", callCount: 5 }
+  ];
+
+  const summary = buildSummary(rows);
+
+  assert.equal(summary.totalCalls, 15);
+  assert.equal(summary.averageWaitTimeSeconds, 0);
+  assert.deepEqual(summary.callsPerQueue, {
+    Sales: 10,
+    Support: 5
+  });
+  assert.deepEqual(summary.callsAnsweredByAgent, {});
+  assert.deepEqual(summary.callsAnsweredByQueueAndAgent, {});
+});
+
 test("readCallQueueCsv validates required file path", () => {
   assert.throws(() => readCallQueueCsv(), /CSV file path is required/);
 });
@@ -82,4 +100,16 @@ test("readCallQueueCsv returns empty rows for header-only CSV", () => {
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
+});
+
+test("readCallQueueCsv parses aggregate CQ export headers", () => {
+  const filePath = path.join(__dirname, "..", "New_Sample.csv");
+  const rows = readCallQueueCsv(filePath);
+
+  assert.ok(rows.length > 0);
+  assert.equal(rows[0].queueName, "Behr-US-StandardServiceCenter@behr.com");
+  assert.equal(rows[0].callCount, 17);
+  assert.equal(rows[0].waitTimeSeconds, 0);
+  assert.equal(rows[0].timestamp, "2026-06-01T00:00:00");
+  assert.equal(rows[0].agentName, "Unknown");
 });

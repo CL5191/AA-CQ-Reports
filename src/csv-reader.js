@@ -49,36 +49,54 @@ function readCallQueueCsv(filePath) {
 
   const queueNameIndex = headers.indexOf("QueueName");
   const waitTimeIndex = headers.indexOf("WaitTimeSeconds");
+  const resourceAccountIndex = headers.indexOf("Resource Account");
+  const totalCallCountIndex = headers.indexOf("Total Call Count");
+  const lastActivityDateIndex = headers.indexOf("Last Activity Date");
   const timestampIndex = headers.indexOf("Timestamp");
   const agentNameIndex = headers.indexOf("AgentName") >= 0
     ? headers.indexOf("AgentName")
     : headers.indexOf("AnsweringAgent");
+  const isAggregateSchema = resourceAccountIndex >= 0 && totalCallCountIndex >= 0;
 
-  if (queueNameIndex < 0 || waitTimeIndex < 0) {
+  if (!isAggregateSchema && (queueNameIndex < 0 || waitTimeIndex < 0)) {
     throw new Error("CSV is missing required headers: QueueName, WaitTimeSeconds.");
   }
 
   return lines.slice(1).filter(Boolean).map((line) => {
     const columns = parseCsvLine(line);
-    const queueName = (columns[queueNameIndex] || "").trim();
-    const waitTimeRaw = (columns[waitTimeIndex] || "0").trim();
+    const queueName = isAggregateSchema
+      ? (columns[resourceAccountIndex] || "").trim()
+      : (columns[queueNameIndex] || "").trim();
+    const waitTimeRaw = isAggregateSchema ? "0" : (columns[waitTimeIndex] || "0").trim();
+    const callCountRaw = isAggregateSchema ? (columns[totalCallCountIndex] || "1").trim() : "1";
     const waitTimeSeconds = Number.parseInt(waitTimeRaw, 10);
+    const callCount = Number.parseInt(callCountRaw, 10);
 
     return {
       queueName,
       waitTimeSeconds: Number.isFinite(waitTimeSeconds) ? waitTimeSeconds : 0,
-      timestamp: timestampIndex >= 0 ? (columns[timestampIndex] || "").trim() : "",
+      callCount: Number.isFinite(callCount) && callCount > 0 ? callCount : 1,
+      timestamp: isAggregateSchema
+        ? (lastActivityDateIndex >= 0 ? (columns[lastActivityDateIndex] || "").trim() : "")
+        : (timestampIndex >= 0 ? (columns[timestampIndex] || "").trim() : ""),
       agentName: agentNameIndex >= 0 ? ((columns[agentNameIndex] || "").trim() || "Unknown") : "Unknown"
     };
   });
 }
 
 function buildSummary(rows) {
-  const totalCalls = rows.length;
-  const totalWaitTime = rows.reduce((sum, row) => sum + row.waitTimeSeconds, 0);
+  const totalCalls = rows.reduce((sum, row) => {
+    const rowCallCount = Number.isFinite(row.callCount) ? row.callCount : 1;
+    return sum + rowCallCount;
+  }, 0);
+  const totalWaitTime = rows.reduce((sum, row) => {
+    const rowCallCount = Number.isFinite(row.callCount) ? row.callCount : 1;
+    return sum + (row.waitTimeSeconds * rowCallCount);
+  }, 0);
   const callsPerQueue = rows.reduce((acc, row) => {
     const key = row.queueName || "Unknown";
-    acc[key] = (acc[key] || 0) + 1;
+    const rowCallCount = Number.isFinite(row.callCount) ? row.callCount : 1;
+    acc[key] = (acc[key] || 0) + rowCallCount;
     return acc;
   }, {});
   const callsAnsweredByAgent = rows.reduce((acc, row) => {
@@ -86,7 +104,8 @@ function buildSummary(rows) {
     if (!key) {
       return acc;
     }
-    acc[key] = (acc[key] || 0) + 1;
+    const rowCallCount = Number.isFinite(row.callCount) ? row.callCount : 1;
+    acc[key] = (acc[key] || 0) + rowCallCount;
     return acc;
   }, {});
   const callsAnsweredByQueueAndAgent = rows.reduce((acc, row) => {
@@ -101,7 +120,8 @@ function buildSummary(rows) {
       acc[queueKey] = {};
     }
 
-    acc[queueKey][agentKey] = (acc[queueKey][agentKey] || 0) + 1;
+    const rowCallCount = Number.isFinite(row.callCount) ? row.callCount : 1;
+    acc[queueKey][agentKey] = (acc[queueKey][agentKey] || 0) + rowCallCount;
     return acc;
   }, {});
 

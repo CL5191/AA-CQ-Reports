@@ -32,7 +32,7 @@ Example usage:
 
 ```bash
 # CQ summary in text
-npm start -- data/sample-cq.csv --source cq --format text
+npm start -- New_Sample.csv --source cq --format text
 
 # Show CLI help
 npm start -- --help
@@ -41,16 +41,16 @@ npm start -- --help
 npm start -- data/sample-aa.csv --source aa --format html --out reports/aa-summary.html
 
 # CQ summary in PDF
-npm start -- data/sample-cq.csv --source cq --format pdf --out reports/cq-summary.pdf
+npm start -- New_Sample.csv --source cq --format pdf --out reports/cq-summary.pdf
 
 # AA summary in Excel-compatible XLS
 npm start -- data/sample-aa.csv --source aa --format xls --out reports/aa-summary.xls
 
 # CQ summary in native XLSX with embedded chart
-npm start -- data/sample-cq.csv --source cq --format xlsx --out reports/cq-summary.xlsx
+npm start -- New_Sample.csv --source cq --format xlsx --out reports/cq-summary.xlsx
 
 # CQ summary for a date/time range (inclusive)
-npm start -- data/sample-cq.csv --source cq --format json --from 2026-06-20T10:00:00Z --to 2026-06-20T10:03:00Z
+npm start -- New_Sample.csv --source cq --format json --from 2026-06-10T00:00:00 --to 2026-06-12T00:00:00
 ```
 
 CLI options:
