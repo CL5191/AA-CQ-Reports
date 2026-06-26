@@ -13,6 +13,7 @@ test("readAutoAttendantCsv parses rows from sample AA CSV", () => {
   assert.equal(rows[0].autoAttendantName, "Main AA");
   assert.equal(rows[0].menuOption, "Sales");
   assert.equal(rows[0].transferDestination, "Sales Queue");
+  assert.equal(rows[0].timestamp, "2026-06-20T10:00:00Z");
 });
 
 test("buildAutoAttendantSummary returns expected AA metrics", () => {

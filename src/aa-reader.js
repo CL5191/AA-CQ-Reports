@@ -50,6 +50,7 @@ function readAutoAttendantCsv(filePath) {
   const autoAttendantNameIndex = headers.indexOf("AutoAttendantName");
   const menuOptionIndex = headers.indexOf("MenuOption");
   const transferDestinationIndex = headers.indexOf("TransferDestination");
+  const timestampIndex = headers.indexOf("Timestamp");
 
   if (autoAttendantNameIndex < 0 || menuOptionIndex < 0 || transferDestinationIndex < 0) {
     throw new Error("CSV is missing required headers: AutoAttendantName, MenuOption, TransferDestination.");
@@ -61,7 +62,8 @@ function readAutoAttendantCsv(filePath) {
     return {
       autoAttendantName: (columns[autoAttendantNameIndex] || "Unknown").trim() || "Unknown",
       menuOption: (columns[menuOptionIndex] || "Unknown").trim() || "Unknown",
-      transferDestination: (columns[transferDestinationIndex] || "Unknown").trim() || "Unknown"
+      transferDestination: (columns[transferDestinationIndex] || "Unknown").trim() || "Unknown",
+      timestamp: timestampIndex >= 0 ? (columns[timestampIndex] || "").trim() : ""
     };
   });
 }

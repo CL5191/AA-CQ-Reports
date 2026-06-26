@@ -1,6 +1,17 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { hello, formatSummary, parseCliArgs, renderSummary, readRowsFromCsvFiles } = require("../src/index");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const {
+  hello,
+  formatSummary,
+  parseCliArgs,
+  renderSummary,
+  readRowsFromCsvFiles,
+  filterRowsByTimestamp,
+  writeOutput
+} = require("../src/index");
 
 test("hello uses default value", () => {
   assert.equal(hello(), "Hello, AA-CQ reports are ready.");
@@ -31,7 +42,10 @@ test("parseCliArgs reads csv path and format flag", () => {
   assert.deepEqual(options, {
     csvPaths: ["data/sample-cq.csv"],
     format: "json",
-    source: "cq"
+    source: "cq",
+    outFilePath: null,
+    from: null,
+    to: null
   });
 });
 
@@ -40,7 +54,10 @@ test("parseCliArgs supports csv output format", () => {
   assert.deepEqual(options, {
     csvPaths: ["data/sample-cq.csv"],
     format: "csv",
-    source: "cq"
+    source: "cq",
+    outFilePath: null,
+    from: null,
+    to: null
   });
 });
 
@@ -49,7 +66,10 @@ test("parseCliArgs supports source selection", () => {
   assert.deepEqual(options, {
     csvPaths: ["data/sample-aa.csv"],
     format: "json",
-    source: "aa"
+    source: "aa",
+    outFilePath: null,
+    from: null,
+    to: null
   });
 });
 
@@ -58,7 +78,31 @@ test("parseCliArgs supports multiple csv inputs", () => {
   assert.deepEqual(options, {
     csvPaths: ["data/a.csv", "data/b.csv"],
     format: "json",
-    source: "cq"
+    source: "cq",
+    outFilePath: null,
+    from: null,
+    to: null
+  });
+});
+
+test("parseCliArgs supports output and timestamp filters", () => {
+  const options = parseCliArgs([
+    "data/sample-cq.csv",
+    "--from",
+    "2026-06-20T10:00:00Z",
+    "--to",
+    "2026-06-20T10:03:00Z",
+    "--out",
+    "reports/daily.html"
+  ]);
+
+  assert.deepEqual(options, {
+    csvPaths: ["data/sample-cq.csv"],
+    format: "text",
+    source: "cq",
+    outFilePath: "reports/daily.html",
+    from: "2026-06-20T10:00:00Z",
+    to: "2026-06-20T10:03:00Z"
   });
 });
 
@@ -79,6 +123,42 @@ test("readRowsFromCsvFiles validates required files", () => {
     () => readRowsFromCsvFiles([], () => []),
     /At least one CSV file path is required/
   );
+});
+
+test("filterRowsByTimestamp returns all rows when no range is provided", () => {
+  const rows = [{ timestamp: "2026-06-20T10:00:00Z" }];
+  assert.deepEqual(filterRowsByTimestamp(rows, null, null), rows);
+});
+
+test("filterRowsByTimestamp applies inclusive time range", () => {
+  const rows = [
+    { id: 1, timestamp: "2026-06-20T10:00:00Z" },
+    { id: 2, timestamp: "2026-06-20T10:02:00Z" },
+    { id: 3, timestamp: "2026-06-20T10:05:00Z" }
+  ];
+
+  const filtered = filterRowsByTimestamp(rows, "2026-06-20T10:00:00Z", "2026-06-20T10:02:00Z");
+  assert.deepEqual(filtered.map((row) => row.id), [1, 2]);
+});
+
+test("filterRowsByTimestamp validates range ordering", () => {
+  assert.throws(
+    () => filterRowsByTimestamp([], "2026-06-20T10:03:00Z", "2026-06-20T10:01:00Z"),
+    /--from must be earlier than or equal to --to/
+  );
+});
+
+test("writeOutput writes report to nested path", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "aa-cq-output-"));
+
+  try {
+    const outputPath = path.join(tempDir, "reports", "report.txt");
+    const resolvedPath = writeOutput("hello", outputPath);
+
+    assert.equal(fs.readFileSync(resolvedPath, "utf8"), "hello");
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
 });
 
 test("renderSummary supports json output", () => {

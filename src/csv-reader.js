@@ -49,6 +49,7 @@ function readCallQueueCsv(filePath) {
 
   const queueNameIndex = headers.indexOf("QueueName");
   const waitTimeIndex = headers.indexOf("WaitTimeSeconds");
+  const timestampIndex = headers.indexOf("Timestamp");
 
   if (queueNameIndex < 0 || waitTimeIndex < 0) {
     throw new Error("CSV is missing required headers: QueueName, WaitTimeSeconds.");
@@ -62,7 +63,8 @@ function readCallQueueCsv(filePath) {
 
     return {
       queueName,
-      waitTimeSeconds: Number.isFinite(waitTimeSeconds) ? waitTimeSeconds : 0
+      waitTimeSeconds: Number.isFinite(waitTimeSeconds) ? waitTimeSeconds : 0,
+      timestamp: timestampIndex >= 0 ? (columns[timestampIndex] || "").trim() : ""
     };
   });
 }

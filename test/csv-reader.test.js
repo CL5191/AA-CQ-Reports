@@ -12,8 +12,10 @@ test("readCallQueueCsv parses queue rows from sample CSV", () => {
   assert.equal(rows.length, 5);
   assert.equal(rows[0].queueName, "Sales");
   assert.equal(rows[0].waitTimeSeconds, 12);
+  assert.equal(rows[0].timestamp, "2026-06-20T10:00:00Z");
   assert.equal(rows[4].queueName, "Support");
   assert.equal(rows[4].waitTimeSeconds, 0);
+  assert.equal(rows[4].timestamp, "2026-06-20T10:04:00Z");
 });
 
 test("buildSummary returns total calls, average wait, and calls per queue", () => {
