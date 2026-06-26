@@ -83,6 +83,77 @@ function rowsToHtmlTable(title, rows) {
   return `<section><h2>${escapeHtml(title)}</h2><table><tbody>${bodyRows}</tbody></table></section>`;
 }
 
+function buildAnsweredMissedRows(entityTotals, answeredByEntityAndAgent) {
+  return Object.entries(entityTotals || {})
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([entity, totalCalls]) => {
+      const answeredCalls = Object.values((answeredByEntityAndAgent || {})[entity] || {})
+        .reduce((sum, calls) => sum + calls, 0);
+      const clampedAnswered = Math.max(0, Math.min(totalCalls, answeredCalls));
+      return {
+        entity,
+        totalCalls,
+        answeredCalls: clampedAnswered,
+        missedCalls: Math.max(0, totalCalls - clampedAnswered)
+      };
+    });
+}
+
+function buildAnsweredMissedChartSection(title, rows) {
+  if (!rows || rows.length === 0) {
+    return `<section><h2>${escapeHtml(title)}</h2><p>No chart data available.</p></section>`;
+  }
+
+  const chartRows = rows.slice(0, 12);
+  const width = 980;
+  const marginLeft = 240;
+  const marginRight = 30;
+  const barAreaWidth = width - marginLeft - marginRight;
+  const barHeight = 20;
+  const rowGap = 34;
+  const topPadding = 56;
+  const height = topPadding + chartRows.length * rowGap + 34;
+  const maxCalls = Math.max(1, ...chartRows.map((row) => row.totalCalls));
+
+  const bars = chartRows.map((row, index) => {
+    const y = topPadding + index * rowGap;
+    const answeredWidth = Math.round((row.answeredCalls / maxCalls) * barAreaWidth);
+    const missedWidth = Math.round((row.missedCalls / maxCalls) * barAreaWidth);
+    const label = `${row.entity} (${row.answeredCalls}/${row.totalCalls})`;
+
+    return [
+      `<text x="12" y="${y + 14}" font-size="12" fill="#1f2937">${escapeHtml(label)}</text>`,
+      `<rect x="${marginLeft}" y="${y}" width="${answeredWidth}" height="${barHeight}" fill="#157FCC" rx="3" ry="3"></rect>`,
+      `<rect x="${marginLeft + answeredWidth}" y="${y}" width="${missedWidth}" height="${barHeight}" fill="#9CA3AF" rx="3" ry="3"></rect>`
+    ].join("");
+  }).join("");
+
+  const ticks = [0, 0.25, 0.5, 0.75, 1]
+    .map((pct) => {
+      const x = marginLeft + Math.round(pct * barAreaWidth);
+      const value = Math.round(pct * maxCalls);
+      return [
+        `<line x1="${x}" y1="42" x2="${x}" y2="${height - 20}" stroke="#E5E7EB" stroke-width="1"></line>`,
+        `<text x="${x}" y="34" text-anchor="middle" font-size="11" fill="#6b7280">${value}</text>`
+      ].join("");
+    })
+    .join("");
+
+  const svg = [
+    `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(title)} chart">`,
+    `<text x="12" y="22" font-size="13" fill="#111827">Answered vs Missed Calls</text>`,
+    `<rect x="${marginLeft}" y="10" width="12" height="12" fill="#157FCC"></rect>`,
+    `<text x="${marginLeft + 18}" y="20" font-size="11" fill="#374151">Answered</text>`,
+    `<rect x="${marginLeft + 96}" y="10" width="12" height="12" fill="#9CA3AF"></rect>`,
+    `<text x="${marginLeft + 114}" y="20" font-size="11" fill="#374151">Missed</text>`,
+    ticks,
+    bars,
+    "</svg>"
+  ].join("");
+
+  return `<section><h2>${escapeHtml(title)}</h2><div style="overflow:auto;border:1px solid #d1d5db;border-radius:8px;padding:10px;background:#ffffff">${svg}</div></section>`;
+}
+
 function buildHtmlDocument(title, sections) {
   return [
     "<!doctype html>",
@@ -112,6 +183,10 @@ function formatSummaryHtml(summary) {
       .map(([agent, calls]) => [`${queue} -> ${agent}`, calls]));
 
   const sections = [
+    buildAnsweredMissedChartSection(
+      "Queue Performance Chart",
+      buildAnsweredMissedRows(summary.callsPerQueue, summary.callsAnsweredByQueueAndAgent)
+    ),
     rowsToHtmlTable("Overview", [
       ["Total Calls", summary.totalCalls],
       ["Average Wait Time (seconds)", summary.averageWaitTimeSeconds]
@@ -209,6 +284,10 @@ function formatAutoAttendantSummaryHtml(summary) {
       .map(([agent, calls]) => [`${autoAttendant} -> ${agent}`, calls]));
 
   const sections = [
+    buildAnsweredMissedChartSection(
+      "Auto Attendant Performance Chart",
+      buildAnsweredMissedRows(summary.callsPerAutoAttendant, summary.callsAnsweredByAutoAttendantAndAgent)
+    ),
     rowsToHtmlTable("Overview", [["Total Calls", summary.totalCalls]]),
     rowsToHtmlTable(
       "Calls Per Auto Attendant",

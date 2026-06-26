@@ -183,6 +183,8 @@ test("formatSummaryHtml renders HTML for CQ summary", () => {
   assert.match(output, /Sales/);
   assert.match(output, /Calls Answered By Agent/);
   assert.match(output, /Calls Answered By Queue And Agent/);
+  assert.match(output, /Queue Performance Chart/);
+  assert.match(output, /<svg/);
 });
 
 test("formatAutoAttendantSummaryHtml renders HTML for AA summary", () => {
@@ -201,6 +203,8 @@ test("formatAutoAttendantSummaryHtml renders HTML for AA summary", () => {
   assert.match(output, /Sales Queue/);
   assert.match(output, /Calls Answered By Agent/);
   assert.match(output, /Calls Answered By Auto Attendant And Agent/);
+  assert.match(output, /Auto Attendant Performance Chart/);
+  assert.match(output, /<svg/);
 });
 
 test("formatSummaryXls renders excel workbook xml", () => {

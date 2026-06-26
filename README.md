@@ -64,6 +64,7 @@ Report content includes:
 - Summary totals and wait-time metrics.
 - Calls answered by agent (overall).
 - Calls answered by AA/CQ and agent pair (for example, `Queue -> Agent` and `Auto Attendant -> Agent`).
+- HTML reports include an Answered vs Missed visual chart per queue/auto attendant.
 
 Run checks:
 
