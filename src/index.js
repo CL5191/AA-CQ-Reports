@@ -8,12 +8,14 @@ const {
   formatSummaryCsv,
   formatSummaryHtml,
   formatSummaryXls,
+  formatSummaryXlsx,
   formatSummaryPdf,
   formatAutoAttendantSummaryText,
   formatAutoAttendantSummaryJson,
   formatAutoAttendantSummaryCsv,
   formatAutoAttendantSummaryHtml,
   formatAutoAttendantSummaryXls,
+  formatAutoAttendantSummaryXlsx,
   formatAutoAttendantSummaryPdf
 } = require("./reporter");
 
@@ -25,7 +27,7 @@ function formatSummary(summary) {
   return formatSummaryText(summary);
 }
 
-const VALID_FORMATS = new Set(["text", "json", "csv", "html", "xls", "pdf"]);
+const VALID_FORMATS = new Set(["text", "json", "csv", "html", "xls", "xlsx", "pdf"]);
 const VALID_SOURCES = new Set(["cq", "aa"]);
 
 function getUsageText() {
@@ -34,7 +36,7 @@ function getUsageText() {
     "",
     "Options:",
     "  --source cq|aa               Data source type (default: cq)",
-    "  --format text|json|csv|html|xls|pdf  Output format (default: text)",
+    "  --format text|json|csv|html|xls|xlsx|pdf  Output format (default: text)",
     "  --out <path>                 Write report output to file",
     "  --from <timestamp>           Include rows on/after timestamp",
     "  --to <timestamp>             Include rows on/before timestamp",
@@ -106,7 +108,7 @@ function parseCliArgs(argv) {
   }
 
   if (!VALID_FORMATS.has(format)) {
-    throw new Error(`Invalid format: ${format}. Use --format text|json|csv|html|xls|pdf.`);
+    throw new Error(`Invalid format: ${format}. Use --format text|json|csv|html|xls|xlsx|pdf.`);
   }
 
   if (!VALID_SOURCES.has(source)) {
@@ -241,7 +243,7 @@ function readRowsFromCsvFiles(filePaths, readRowsFn) {
 }
 
 function renderSummary(summary, format, source = "cq") {
-  if ((format === "xls" || format === "pdf") && source && typeof source === "string") {
+  if ((format === "xls" || format === "xlsx" || format === "pdf") && source && typeof source === "string") {
     // Binary formats should generally be written to disk via --out.
   }
 
@@ -260,6 +262,10 @@ function renderSummary(summary, format, source = "cq") {
 
     if (format === "xls") {
       return formatSummaryXls(summary);
+    }
+
+    if (format === "xlsx") {
+      return formatSummaryXlsx(summary);
     }
 
     if (format === "pdf") {
@@ -288,6 +294,10 @@ function renderSummary(summary, format, source = "cq") {
       return formatAutoAttendantSummaryXls(summary);
     }
 
+    if (format === "xlsx") {
+      return formatAutoAttendantSummaryXlsx(summary);
+    }
+
     if (format === "pdf") {
       return formatAutoAttendantSummaryPdf(summary);
     }
@@ -297,7 +307,7 @@ function renderSummary(summary, format, source = "cq") {
     }
   }
 
-  throw new Error("Invalid source/format. Use --source cq|aa and --format text|json|csv|html|xls|pdf.");
+  throw new Error("Invalid source/format. Use --source cq|aa and --format text|json|csv|html|xls|xlsx|pdf.");
 }
 
 if (require.main === module) {
@@ -333,7 +343,7 @@ if (require.main === module) {
         console.log(`Report written to ${resolvedPath}`);
       } else {
         if (Buffer.isBuffer(output)) {
-          throw new Error("Binary formats xls/pdf require --out <path>.");
+          throw new Error("Binary formats xls/xlsx/pdf require --out <path>.");
         }
         console.log(output);
       }

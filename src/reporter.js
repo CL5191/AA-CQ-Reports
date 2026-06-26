@@ -1,3 +1,5 @@
+const { buildCqXlsx, buildAaXlsx } = require("./xlsx-writer");
+
 function formatSummaryText(summary) {
   const queueLines = Object.entries(summary.callsPerQueue)
     .sort(([a], [b]) => a.localeCompare(b))
@@ -453,12 +455,20 @@ function formatSummaryXls(summary) {
   return buildXlsWorkbook("CQ Summary", toCqMetricRows(summary));
 }
 
+function formatSummaryXlsx(summary) {
+  return buildCqXlsx(summary);
+}
+
 function formatSummaryPdf(summary) {
   return buildSimplePdf("AA-CQ Summary", toCqMetricRows(summary));
 }
 
 function formatAutoAttendantSummaryXls(summary) {
   return buildXlsWorkbook("AA Summary", toAaMetricRows(summary));
+}
+
+function formatAutoAttendantSummaryXlsx(summary) {
+  return buildAaXlsx(summary);
 }
 
 function formatAutoAttendantSummaryPdf(summary) {
@@ -471,11 +481,13 @@ module.exports = {
   formatSummaryCsv,
   formatSummaryHtml,
   formatSummaryXls,
+  formatSummaryXlsx,
   formatSummaryPdf,
   formatAutoAttendantSummaryText,
   formatAutoAttendantSummaryJson,
   formatAutoAttendantSummaryCsv,
   formatAutoAttendantSummaryHtml,
   formatAutoAttendantSummaryXls,
+  formatAutoAttendantSummaryXlsx,
   formatAutoAttendantSummaryPdf
 };

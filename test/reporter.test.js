@@ -6,12 +6,14 @@ const {
   formatSummaryCsv,
   formatSummaryHtml,
   formatSummaryXls,
+  formatSummaryXlsx,
   formatSummaryPdf,
   formatAutoAttendantSummaryText,
   formatAutoAttendantSummaryJson,
   formatAutoAttendantSummaryCsv,
   formatAutoAttendantSummaryHtml,
   formatAutoAttendantSummaryXls,
+  formatAutoAttendantSummaryXlsx,
   formatAutoAttendantSummaryPdf
 } = require("../src/reporter");
 
@@ -233,6 +235,19 @@ test("formatSummaryPdf renders pdf bytes", () => {
   assert.equal(output.subarray(0, 4).toString("utf8"), "%PDF");
 });
 
+test("formatSummaryXlsx renders zip bytes", () => {
+  const output = formatSummaryXlsx({
+    totalCalls: 2,
+    averageWaitTimeSeconds: 15,
+    callsPerQueue: { Sales: 2 },
+    callsAnsweredByAgent: { Alice: 2 },
+    callsAnsweredByQueueAndAgent: { Sales: { Alice: 2 } }
+  });
+
+  assert.equal(output.subarray(0, 2).toString("utf8"), "PK");
+  assert.match(output.toString("latin1"), /xl\/charts\/chart1.xml/);
+});
+
 test("formatAutoAttendantSummaryXls renders excel workbook xml", () => {
   const output = formatAutoAttendantSummaryXls({
     totalCalls: 2,
@@ -259,4 +274,18 @@ test("formatAutoAttendantSummaryPdf renders pdf bytes", () => {
   });
 
   assert.equal(output.subarray(0, 4).toString("utf8"), "%PDF");
+});
+
+test("formatAutoAttendantSummaryXlsx renders zip bytes", () => {
+  const output = formatAutoAttendantSummaryXlsx({
+    totalCalls: 2,
+    callsPerAutoAttendant: { "Main AA": 2 },
+    menuSelections: { Sales: 2 },
+    transfersByDestination: { "Sales Queue": 2 },
+    callsAnsweredByAgent: { Alice: 2 },
+    callsAnsweredByAutoAttendantAndAgent: { "Main AA": { Alice: 2 } }
+  });
+
+  assert.equal(output.subarray(0, 2).toString("utf8"), "PK");
+  assert.match(output.toString("latin1"), /xl\/drawings\/drawing1.xml/);
 });

@@ -133,7 +133,7 @@ test("getUsageText includes key options", () => {
   const usage = getUsageText();
   assert.match(usage, /Usage:/);
   assert.match(usage, /--source cq\|aa/);
-  assert.match(usage, /--format text\|json\|csv\|html\|xls\|pdf/);
+  assert.match(usage, /--format text\|json\|csv\|html\|xls\|xlsx\|pdf/);
   assert.match(usage, /--help, -h/);
 });
 
@@ -292,7 +292,7 @@ test("renderSummary supports json output", () => {
 test("renderSummary rejects unsupported format", () => {
   assert.throws(
     () => renderSummary({ totalCalls: 0, averageWaitTimeSeconds: 0, callsPerQueue: {}, callsAnsweredByAgent: {} }, "xml"),
-    /text\|json\|csv\|html\|xls\|pdf/
+    /text\|json\|csv\|html\|xls\|xlsx\|pdf/
   );
 });
 
@@ -384,6 +384,23 @@ test("renderSummary supports CQ xls output", () => {
 
   assert.equal(Buffer.isBuffer(output), true);
   assert.match(output.toString("utf8"), /<Workbook/);
+});
+
+test("renderSummary supports CQ xlsx output", () => {
+  const output = renderSummary(
+    {
+      totalCalls: 1,
+      averageWaitTimeSeconds: 3,
+      callsPerQueue: { Sales: 1 },
+      callsAnsweredByAgent: { Alice: 1 },
+      callsAnsweredByQueueAndAgent: { Sales: { Alice: 1 } }
+    },
+    "xlsx",
+    "cq"
+  );
+
+  assert.equal(Buffer.isBuffer(output), true);
+  assert.equal(output.subarray(0, 2).toString("utf8"), "PK");
 });
 
 test("renderSummary supports AA pdf output", () => {

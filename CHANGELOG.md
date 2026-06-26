@@ -16,6 +16,7 @@ All notable changes to this project are documented in this file.
 - Native downloadable Excel-compatible `.xls` and `.pdf` report formats.
 - Added detailed answered-call breakdowns by AA/CQ and agent pairing.
 - Added visual Answered vs Missed charts in HTML report outputs.
+- Added native OpenXML `.xlsx` output with styled worksheet, frozen panes, and embedded chart.
 
 ### Changed
 
