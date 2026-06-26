@@ -42,6 +42,55 @@ function formatSummaryCsv(summary) {
     .join("\n");
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function rowsToHtmlTable(title, rows) {
+  const bodyRows = rows
+    .map(([label, value]) => `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`)
+    .join("");
+
+  return `<section><h2>${escapeHtml(title)}</h2><table><tbody>${bodyRows}</tbody></table></section>`;
+}
+
+function buildHtmlDocument(title, sections) {
+  return [
+    "<!doctype html>",
+    "<html lang=\"en\">",
+    "<head>",
+    "<meta charset=\"utf-8\">",
+    `<title>${escapeHtml(title)}</title>`,
+    "<style>body{font-family:Segoe UI,Tahoma,sans-serif;margin:24px;line-height:1.5}h1{margin-bottom:16px}section{margin-bottom:16px}table{border-collapse:collapse;min-width:420px}th,td{border:1px solid #d0d7de;padding:8px 10px;text-align:left}th{background:#f6f8fa;width:260px}</style>",
+    "</head>",
+    "<body>",
+    `<h1>${escapeHtml(title)}</h1>`,
+    sections.join(""),
+    "</body>",
+    "</html>"
+  ].join("\n");
+}
+
+function formatSummaryHtml(summary) {
+  const queueRows = Object.entries(summary.callsPerQueue)
+    .sort(([a], [b]) => a.localeCompare(b));
+
+  const sections = [
+    rowsToHtmlTable("Overview", [
+      ["Total Calls", summary.totalCalls],
+      ["Average Wait Time (seconds)", summary.averageWaitTimeSeconds]
+    ]),
+    rowsToHtmlTable("Calls Per Queue", queueRows.length > 0 ? queueRows : [["None", 0]])
+  ];
+
+  return buildHtmlDocument("AA-CQ Summary", sections);
+}
+
 function formatAutoAttendantSummaryText(summary) {
   const autoAttendantLines = Object.entries(summary.callsPerAutoAttendant)
     .sort(([a], [b]) => a.localeCompare(b))
@@ -95,11 +144,33 @@ function formatAutoAttendantSummaryCsv(summary) {
     .join("\n");
 }
 
+function formatAutoAttendantSummaryHtml(summary) {
+  const sections = [
+    rowsToHtmlTable("Overview", [["Total Calls", summary.totalCalls]]),
+    rowsToHtmlTable(
+      "Calls Per Auto Attendant",
+      Object.entries(summary.callsPerAutoAttendant).sort(([a], [b]) => a.localeCompare(b))
+    ),
+    rowsToHtmlTable(
+      "Menu Selections",
+      Object.entries(summary.menuSelections).sort(([a], [b]) => a.localeCompare(b))
+    ),
+    rowsToHtmlTable(
+      "Transfers By Destination",
+      Object.entries(summary.transfersByDestination).sort(([a], [b]) => a.localeCompare(b))
+    )
+  ];
+
+  return buildHtmlDocument("Auto Attendant Summary", sections);
+}
+
 module.exports = {
   formatSummaryText,
   formatSummaryJson,
   formatSummaryCsv,
+  formatSummaryHtml,
   formatAutoAttendantSummaryText,
   formatAutoAttendantSummaryJson,
-  formatAutoAttendantSummaryCsv
+  formatAutoAttendantSummaryCsv,
+  formatAutoAttendantSummaryHtml
 };

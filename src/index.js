@@ -4,9 +4,11 @@ const {
   formatSummaryText,
   formatSummaryJson,
   formatSummaryCsv,
+  formatSummaryHtml,
   formatAutoAttendantSummaryText,
   formatAutoAttendantSummaryJson,
-  formatAutoAttendantSummaryCsv
+  formatAutoAttendantSummaryCsv,
+  formatAutoAttendantSummaryHtml
 } = require("./reporter");
 
 function hello(name = "AA-CQ") {
@@ -67,6 +69,10 @@ function renderSummary(summary, format, source = "cq") {
       return formatSummaryCsv(summary);
     }
 
+    if (format === "html") {
+      return formatSummaryHtml(summary);
+    }
+
     if (format === "text") {
       return formatSummaryText(summary);
     }
@@ -81,19 +87,23 @@ function renderSummary(summary, format, source = "cq") {
       return formatAutoAttendantSummaryCsv(summary);
     }
 
+    if (format === "html") {
+      return formatAutoAttendantSummaryHtml(summary);
+    }
+
     if (format === "text") {
       return formatAutoAttendantSummaryText(summary);
     }
   }
 
-  throw new Error("Invalid source/format. Use --source cq|aa and --format text|json|csv.");
+  throw new Error("Invalid source/format. Use --source cq|aa and --format text|json|csv|html.");
 }
 
 if (require.main === module) {
   const { csvPaths, format, source } = parseCliArgs(process.argv.slice(2));
 
   if (csvPaths.length === 0) {
-    console.error("Usage: npm start <path-to-csv> [additional-csv-paths...] [--source cq|aa] [--format text|json|csv]");
+    console.error("Usage: npm start <path-to-csv> [additional-csv-paths...] [--source cq|aa] [--format text|json|csv|html]");
     process.exitCode = 1;
   } else {
     try {
