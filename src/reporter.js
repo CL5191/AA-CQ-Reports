@@ -86,6 +86,9 @@ function rowsToHtmlTable(title, rows) {
 }
 
 function buildAnsweredMissedRows(entityTotals, answeredByEntityAndAgent) {
+  const answeredDataAvailable = Object.values(answeredByEntityAndAgent || {})
+    .some((agentMap) => Object.keys(agentMap || {}).length > 0);
+
   return Object.entries(entityTotals || {})
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([entity, totalCalls]) => {
@@ -95,8 +98,9 @@ function buildAnsweredMissedRows(entityTotals, answeredByEntityAndAgent) {
       return {
         entity,
         totalCalls,
-        answeredCalls: clampedAnswered,
-        missedCalls: Math.max(0, totalCalls - clampedAnswered)
+        answeredCalls: answeredDataAvailable ? clampedAnswered : totalCalls,
+        missedCalls: answeredDataAvailable ? Math.max(0, totalCalls - clampedAnswered) : 0,
+        answeredDataAvailable
       };
     });
 }
@@ -116,17 +120,22 @@ function buildAnsweredMissedChartSection(title, rows) {
   const topPadding = 56;
   const height = topPadding + chartRows.length * rowGap + 34;
   const maxCalls = Math.max(1, ...chartRows.map((row) => row.totalCalls));
+  const answeredDataAvailable = chartRows.some((row) => row.answeredDataAvailable);
 
   const bars = chartRows.map((row, index) => {
     const y = topPadding + index * rowGap;
     const answeredWidth = Math.round((row.answeredCalls / maxCalls) * barAreaWidth);
     const missedWidth = Math.round((row.missedCalls / maxCalls) * barAreaWidth);
-    const label = `${row.entity} (${row.answeredCalls}/${row.totalCalls})`;
+    const label = answeredDataAvailable
+      ? `${row.entity} (${row.answeredCalls}/${row.totalCalls})`
+      : `${row.entity} (${row.totalCalls} total)`;
 
     return [
       `<text x="12" y="${y + 14}" font-size="12" fill="#1f2937">${escapeHtml(label)}</text>`,
       `<rect x="${marginLeft}" y="${y}" width="${answeredWidth}" height="${barHeight}" fill="#157FCC" rx="3" ry="3"></rect>`,
-      `<rect x="${marginLeft + answeredWidth}" y="${y}" width="${missedWidth}" height="${barHeight}" fill="#9CA3AF" rx="3" ry="3"></rect>`
+      answeredDataAvailable
+        ? `<rect x="${marginLeft + answeredWidth}" y="${y}" width="${missedWidth}" height="${barHeight}" fill="#9CA3AF" rx="3" ry="3"></rect>`
+        : ""
     ].join("");
   }).join("");
 
@@ -143,11 +152,11 @@ function buildAnsweredMissedChartSection(title, rows) {
 
   const svg = [
     `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(title)} chart">`,
-    `<text x="12" y="22" font-size="13" fill="#111827">Answered vs Missed Calls</text>`,
+    `<text x="12" y="22" font-size="13" fill="#111827">${escapeHtml(answeredDataAvailable ? "Answered vs Missed Calls" : "Total Calls (Answered Breakdown Unavailable)")}</text>`,
     `<rect x="${marginLeft}" y="10" width="12" height="12" fill="#157FCC"></rect>`,
-    `<text x="${marginLeft + 18}" y="20" font-size="11" fill="#374151">Answered</text>`,
-    `<rect x="${marginLeft + 96}" y="10" width="12" height="12" fill="#9CA3AF"></rect>`,
-    `<text x="${marginLeft + 114}" y="20" font-size="11" fill="#374151">Missed</text>`,
+    `<text x="${marginLeft + 18}" y="20" font-size="11" fill="#374151">${escapeHtml(answeredDataAvailable ? "Answered" : "Total")}</text>`,
+    answeredDataAvailable ? `<rect x="${marginLeft + 96}" y="10" width="12" height="12" fill="#9CA3AF"></rect>` : "",
+    answeredDataAvailable ? `<text x="${marginLeft + 114}" y="20" font-size="11" fill="#374151">Missed</text>` : "",
     ticks,
     bars,
     "</svg>"
@@ -410,20 +419,88 @@ function escapePdfText(value) {
     .replace(/\)/g, "\\)");
 }
 
-function buildSimplePdf(title, rows) {
-  const lines = [title, "", ...rows.map(([metric, value]) => `${metric}: ${value}`)];
-  const maxLines = 45;
-  const visibleLines = lines.slice(0, maxLines);
+function buildPdfTextLine(text, options = {}) {
+  const x = options.x || 50;
+  const y = options.y || 760;
+  const size = options.size || 10;
+  return `BT /F1 ${size} Tf 1 0 0 1 ${x} ${y} Tm (${escapePdfText(text)}) Tj ET`;
+}
 
-  const textOps = ["BT", "/F1 10 Tf", "50 760 Td"];
-  for (let i = 0; i < visibleLines.length; i += 1) {
-    if (i > 0) {
-      textOps.push("0 -14 Td");
-    }
-    textOps.push(`(${escapePdfText(visibleLines[i])}) Tj`);
+function buildPdfChartOps(chartTitle, chartRows) {
+  if (!chartRows || chartRows.length === 0) {
+    return {
+      ops: [buildPdfTextLine(`${chartTitle}: No chart data available.`, { x: 50, y: 742, size: 9 })],
+      nextY: 724
+    };
   }
-  textOps.push("ET");
-  const stream = textOps.join("\n");
+
+  const rows = chartRows.slice(0, 8);
+  const answeredDataAvailable = rows.some((row) => row.answeredDataAvailable);
+  const chartLeft = 240;
+  const chartWidth = 320;
+  const barHeight = 10;
+  const rowGap = 20;
+  const startY = 708;
+  const maxCalls = Math.max(1, ...rows.map((row) => row.totalCalls));
+
+  const ops = [
+    buildPdfTextLine(chartTitle, { x: 50, y: 742, size: 9 }),
+    buildPdfTextLine(answeredDataAvailable ? "Answered" : "Total", { x: chartLeft + 16, y: 730, size: 8 }),
+    "0.082 0.498 0.8 rg",
+    `${chartLeft} 724 10 10 re f`
+  ];
+
+  if (answeredDataAvailable) {
+    ops.push(buildPdfTextLine("Missed", { x: chartLeft + 98, y: 730, size: 8 }));
+    ops.push("0.612 0.639 0.686 rg");
+    ops.push(`${chartLeft + 82} 724 10 10 re f`);
+  }
+
+  rows.forEach((row, index) => {
+    const y = startY - (index * rowGap);
+    const answeredWidth = Math.round((row.answeredCalls / maxCalls) * chartWidth);
+    const missedWidth = Math.round((row.missedCalls / maxCalls) * chartWidth);
+    const label = answeredDataAvailable
+      ? `${row.entity} (${row.answeredCalls}/${row.totalCalls})`
+      : `${row.entity} (${row.totalCalls} total)`;
+
+    ops.push(buildPdfTextLine(label, { x: 50, y: y + 2, size: 7 }));
+    ops.push("0.082 0.498 0.8 rg");
+    ops.push(`${chartLeft} ${y} ${Math.max(0, answeredWidth)} ${barHeight} re f`);
+
+    if (answeredDataAvailable) {
+      ops.push("0.612 0.639 0.686 rg");
+      ops.push(`${chartLeft + answeredWidth} ${y} ${Math.max(0, missedWidth)} ${barHeight} re f`);
+    }
+  });
+
+  return {
+    ops,
+    nextY: startY - (rows.length * rowGap) - 12
+  };
+}
+
+function buildSimplePdf(title, rows, chartOptions) {
+  const ops = [buildPdfTextLine(title, { x: 50, y: 770, size: 12 })];
+  let metricsStartY = 742;
+
+  if (chartOptions) {
+    const chart = buildPdfChartOps(chartOptions.title, chartOptions.rows);
+    ops.push(...chart.ops);
+    metricsStartY = chart.nextY;
+  }
+
+  let currentY = metricsStartY;
+  const metricLines = rows.map(([metric, value]) => `${metric}: ${value}`);
+  for (let i = 0; i < metricLines.length; i += 1) {
+    if (currentY < 40) {
+      break;
+    }
+    ops.push(buildPdfTextLine(metricLines[i], { x: 50, y: currentY, size: 9 }));
+    currentY -= 12;
+  }
+
+  const stream = ops.join("\n");
 
   const objects = [
     "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
@@ -460,7 +537,15 @@ function formatSummaryXlsx(summary) {
 }
 
 function formatSummaryPdf(summary) {
-  return buildSimplePdf("AA-CQ Summary", toCqMetricRows(summary));
+  const chartRows = buildAnsweredMissedRows(summary.callsPerQueue, summary.callsAnsweredByQueueAndAgent);
+  const answeredDataAvailable = chartRows.some((row) => row.answeredDataAvailable);
+
+  return buildSimplePdf("AA-CQ Summary", toCqMetricRows(summary), {
+    title: answeredDataAvailable
+      ? "Queue Performance Chart (Answered vs Missed)"
+      : "Queue Performance Chart (Total Calls)",
+    rows: chartRows
+  });
 }
 
 function formatAutoAttendantSummaryXls(summary) {
@@ -472,7 +557,15 @@ function formatAutoAttendantSummaryXlsx(summary) {
 }
 
 function formatAutoAttendantSummaryPdf(summary) {
-  return buildSimplePdf("Auto Attendant Summary", toAaMetricRows(summary));
+  const chartRows = buildAnsweredMissedRows(summary.callsPerAutoAttendant, summary.callsAnsweredByAutoAttendantAndAgent);
+  const answeredDataAvailable = chartRows.some((row) => row.answeredDataAvailable);
+
+  return buildSimplePdf("Auto Attendant Summary", toAaMetricRows(summary), {
+    title: answeredDataAvailable
+      ? "Auto Attendant Performance Chart (Answered vs Missed)"
+      : "Auto Attendant Performance Chart (Total Calls)",
+    rows: chartRows
+  });
 }
 
 module.exports = {

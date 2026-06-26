@@ -152,29 +152,43 @@ function buildStylesXml() {
   ].join("");
 }
 
-function buildWorksheetXml(reportTitle, subtitle, entities, chartTitle) {
+function buildWorksheetXml(reportTitle, subtitle, entities, chartTitle, hasAnsweredData) {
   const rows = [];
+  const lastCol = hasAnsweredData ? "E" : "B";
   rows.push(rowToXml(1, [{ col: 1, value: reportTitle, style: 1 }]));
   rows.push(rowToXml(2, [{ col: 1, value: subtitle, style: 0 }]));
   rows.push(rowToXml(4, [{ col: 1, value: chartTitle, style: 4 }]));
 
-  rows.push(rowToXml(7, [
-    { col: 1, value: "Entity", style: 2 },
-    { col: 2, value: "Total Calls", style: 2 },
-    { col: 3, value: "Answered Calls", style: 2 },
-    { col: 4, value: "Missed Calls", style: 2 },
-    { col: 5, value: "Answered %", style: 2 }
-  ]));
+  rows.push(rowToXml(7, hasAnsweredData
+    ? [
+      { col: 1, value: "Entity", style: 2 },
+      { col: 2, value: "Total Calls", style: 2 },
+      { col: 3, value: "Answered Calls", style: 2 },
+      { col: 4, value: "Missed Calls", style: 2 },
+      { col: 5, value: "Answered %", style: 2 }
+    ]
+    : [
+      { col: 1, value: "Entity", style: 2 },
+      { col: 2, value: "Total Calls", style: 2 }
+    ]));
 
   entities.forEach((entity, index) => {
     const row = 8 + index;
-    const pct = entity.totalCalls > 0 ? entity.answeredCalls / entity.totalCalls : 0;
+    if (hasAnsweredData) {
+      const pct = entity.totalCalls > 0 ? entity.answeredCalls / entity.totalCalls : 0;
+      rows.push(rowToXml(row, [
+        { col: 1, value: entity.name, style: 3 },
+        { col: 2, value: entity.totalCalls, style: 3 },
+        { col: 3, value: entity.answeredCalls, style: 3 },
+        { col: 4, value: entity.missedCalls, style: 3 },
+        { col: 5, value: pct, style: 5 }
+      ]));
+      return;
+    }
+
     rows.push(rowToXml(row, [
       { col: 1, value: entity.name, style: 3 },
-      { col: 2, value: entity.totalCalls, style: 3 },
-      { col: 3, value: entity.answeredCalls, style: 3 },
-      { col: 4, value: entity.missedCalls, style: 3 },
-      { col: 5, value: pct, style: 5 }
+      { col: 2, value: entity.totalCalls, style: 3 }
     ]));
   });
 
@@ -182,19 +196,36 @@ function buildWorksheetXml(reportTitle, subtitle, entities, chartTitle) {
     "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>",
     "<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">",
     "<sheetViews><sheetView workbookViewId=\"0\" showGridLines=\"0\"><pane ySplit=\"7\" topLeftCell=\"A8\" activePane=\"bottomLeft\" state=\"frozen\"/></sheetView></sheetViews>",
-    "<cols><col min=\"1\" max=\"1\" width=\"34\" customWidth=\"1\"/><col min=\"2\" max=\"5\" width=\"14\" customWidth=\"1\"/></cols>",
+    hasAnsweredData
+      ? "<cols><col min=\"1\" max=\"1\" width=\"34\" customWidth=\"1\"/><col min=\"2\" max=\"5\" width=\"14\" customWidth=\"1\"/></cols>"
+      : "<cols><col min=\"1\" max=\"1\" width=\"48\" customWidth=\"1\"/><col min=\"2\" max=\"2\" width=\"14\" customWidth=\"1\"/></cols>",
     "<sheetData>",
     rows.join(""),
     "</sheetData>",
-    "<mergeCells count=\"3\"><mergeCell ref=\"A1:E1\"/><mergeCell ref=\"A2:E2\"/><mergeCell ref=\"A4:E4\"/></mergeCells>",
+    `<mergeCells count="3"><mergeCell ref="A1:${lastCol}1"/><mergeCell ref="A2:${lastCol}2"/><mergeCell ref="A4:${lastCol}4"/></mergeCells>`,
     "<drawing r:id=\"rId1\"/>",
     "</worksheet>"
   ].join("");
 }
 
-function buildChartXml(chartTitle, rowCount) {
+function buildChartXml(chartTitle, rowCount, hasAnsweredData) {
   const start = 8;
   const end = start + Math.max(1, rowCount) - 1;
+
+  const seriesXml = hasAnsweredData
+    ? [
+      "<c:ser><c:idx val=\"0\"/><c:order val=\"0\"/><c:tx><c:v>Answered Calls</c:v></c:tx>",
+      `<c:cat><c:strRef><c:f>Sheet1!$A$${start}:$A$${end}</c:f></c:strRef></c:cat>`,
+      `<c:val><c:numRef><c:f>Sheet1!$C$${start}:$C$${end}</c:f></c:numRef></c:val></c:ser>`,
+      "<c:ser><c:idx val=\"1\"/><c:order val=\"1\"/><c:tx><c:v>Missed Calls</c:v></c:tx>",
+      `<c:cat><c:strRef><c:f>Sheet1!$A$${start}:$A$${end}</c:f></c:strRef></c:cat>`,
+      `<c:val><c:numRef><c:f>Sheet1!$D$${start}:$D$${end}</c:f></c:numRef></c:val></c:ser>`
+    ].join("")
+    : [
+      "<c:ser><c:idx val=\"0\"/><c:order val=\"0\"/><c:tx><c:v>Total Calls</c:v></c:tx>",
+      `<c:cat><c:strRef><c:f>Sheet1!$A$${start}:$A$${end}</c:f></c:strRef></c:cat>`,
+      `<c:val><c:numRef><c:f>Sheet1!$B$${start}:$B$${end}</c:f></c:numRef></c:val></c:ser>`
+    ].join("");
 
   return [
     "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>",
@@ -203,12 +234,7 @@ function buildChartXml(chartTitle, rowCount) {
     `<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang=\"en-US\"/><a:t>${escapeXml(chartTitle)}</a:t></a:r></a:p></c:rich></c:tx></c:title>`,
     "<c:plotArea><c:layout/>",
     "<c:barChart><c:barDir val=\"col\"/><c:grouping val=\"clustered\"/>",
-    "<c:ser><c:idx val=\"0\"/><c:order val=\"0\"/><c:tx><c:v>Answered Calls</c:v></c:tx>",
-    `<c:cat><c:strRef><c:f>Sheet1!$A$${start}:$A$${end}</c:f></c:strRef></c:cat>`,
-    `<c:val><c:numRef><c:f>Sheet1!$C$${start}:$C$${end}</c:f></c:numRef></c:val></c:ser>`,
-    "<c:ser><c:idx val=\"1\"/><c:order val=\"1\"/><c:tx><c:v>Missed Calls</c:v></c:tx>",
-    `<c:cat><c:strRef><c:f>Sheet1!$A$${start}:$A$${end}</c:f></c:strRef></c:cat>`,
-    `<c:val><c:numRef><c:f>Sheet1!$D$${start}:$D$${end}</c:f></c:numRef></c:val></c:ser>`,
+    seriesXml,
     "<c:axId val=\"50010001\"/><c:axId val=\"50010002\"/></c:barChart>",
     "<c:catAx><c:axId val=\"50010001\"/><c:scaling><c:orientation val=\"minMax\"/></c:scaling><c:axPos val=\"b\"/><c:tickLblPos val=\"nextTo\"/><c:crossAx val=\"50010002\"/><c:crosses val=\"autoZero\"/></c:catAx>",
     "<c:valAx><c:axId val=\"50010002\"/><c:scaling><c:orientation val=\"minMax\"/></c:scaling><c:axPos val=\"l\"/><c:majorGridlines/><c:tickLblPos val=\"nextTo\"/><c:crossAx val=\"50010001\"/><c:crosses val=\"autoZero\"/></c:valAx>",
@@ -232,22 +258,29 @@ function buildDrawingXml() {
 }
 
 function entityChartRows(entityTotals, answeredByEntityAndAgent) {
+  const answeredDataAvailable = Object.values(answeredByEntityAndAgent || {})
+    .some((agentMap) => Object.keys(agentMap || {}).length > 0);
+
   return Object.entries(entityTotals || {})
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([name, totalCalls]) => {
       const answeredCalls = Object.values((answeredByEntityAndAgent || {})[name] || {})
         .reduce((sum, calls) => sum + calls, 0);
-      const answered = Math.max(0, Math.min(totalCalls, answeredCalls));
+      const answered = answeredDataAvailable
+        ? Math.max(0, Math.min(totalCalls, answeredCalls))
+        : totalCalls;
       return {
         name,
         totalCalls,
         answeredCalls: answered,
-        missedCalls: Math.max(0, totalCalls - answered)
+        missedCalls: answeredDataAvailable ? Math.max(0, totalCalls - answered) : 0,
+        answeredDataAvailable
       };
     });
 }
 
 function buildXlsxBuffer(options) {
+  const hasAnsweredData = options.hasAnsweredData;
   const entities = options.entities.length > 0 ? options.entities : [{ name: "None", totalCalls: 0, answeredCalls: 0, missedCalls: 0 }];
 
   const entries = [
@@ -264,31 +297,41 @@ function buildXlsxBuffer(options) {
     { name: "xl/workbook.xml", data: "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><bookViews><workbookView/></bookViews><sheets><sheet name=\"Sheet1\" sheetId=\"1\" r:id=\"rId1\"/></sheets></workbook>" },
     { name: "xl/_rels/workbook.xml.rels", data: "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet1.xml\"/><Relationship Id=\"rId2\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/></Relationships>" },
     { name: "xl/styles.xml", data: buildStylesXml() },
-    { name: "xl/worksheets/sheet1.xml", data: buildWorksheetXml(options.reportTitle, options.subtitle, entities, options.chartTitle) },
+    { name: "xl/worksheets/sheet1.xml", data: buildWorksheetXml(options.reportTitle, options.subtitle, entities, options.chartTitle, hasAnsweredData) },
     { name: "xl/worksheets/_rels/sheet1.xml.rels", data: "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing\" Target=\"../drawings/drawing1.xml\"/></Relationships>" },
     { name: "xl/drawings/drawing1.xml", data: buildDrawingXml() },
     { name: "xl/drawings/_rels/drawing1.xml.rels", data: "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart\" Target=\"../charts/chart1.xml\"/></Relationships>" },
-    { name: "xl/charts/chart1.xml", data: buildChartXml(options.chartTitle, entities.length) }
+    { name: "xl/charts/chart1.xml", data: buildChartXml(options.chartTitle, entities.length, hasAnsweredData) }
   ];
 
   return toZip(entries);
 }
 
 function buildCqXlsx(summary) {
+  const entities = entityChartRows(summary.callsPerQueue, summary.callsAnsweredByQueueAndAgent);
+  const hasAnsweredData = entities.some((entity) => entity.answeredDataAvailable);
   return buildXlsxBuffer({
     reportTitle: "AA-CQ Weekly Service Report",
     subtitle: "Call Queue View",
-    chartTitle: "Answered vs Missed by Queue",
-    entities: entityChartRows(summary.callsPerQueue, summary.callsAnsweredByQueueAndAgent)
+    chartTitle: hasAnsweredData
+      ? "Answered vs Missed by Queue"
+      : "Total Calls by Queue (Answered Breakdown Unavailable)",
+    hasAnsweredData,
+    entities
   });
 }
 
 function buildAaXlsx(summary) {
+  const entities = entityChartRows(summary.callsPerAutoAttendant, summary.callsAnsweredByAutoAttendantAndAgent);
+  const hasAnsweredData = entities.some((entity) => entity.answeredDataAvailable);
   return buildXlsxBuffer({
     reportTitle: "AA-CQ Weekly Service Report",
     subtitle: "Auto Attendant View",
-    chartTitle: "Answered vs Missed by Auto Attendant",
-    entities: entityChartRows(summary.callsPerAutoAttendant, summary.callsAnsweredByAutoAttendantAndAgent)
+    chartTitle: hasAnsweredData
+      ? "Answered vs Missed by Auto Attendant"
+      : "Total Calls by Auto Attendant (Answered Breakdown Unavailable)",
+    hasAnsweredData,
+    entities
   });
 }
 

@@ -189,6 +189,23 @@ test("formatSummaryHtml renders HTML for CQ summary", () => {
   assert.match(output, /<svg/);
 });
 
+test("formatSummaryHtml uses total-calls chart when answered breakdown is unavailable", () => {
+  const output = formatSummaryHtml({
+    totalCalls: 6,
+    averageWaitTimeSeconds: 0,
+    callsPerQueue: {
+      Sales: 4,
+      Support: 2
+    },
+    callsAnsweredByAgent: {},
+    callsAnsweredByQueueAndAgent: {}
+  });
+
+  assert.match(output, /Total Calls \(Answered Breakdown Unavailable\)/);
+  assert.match(output, /Sales \(4 total\)/);
+  assert.doesNotMatch(output, /Sales \(0\/4\)/);
+});
+
 test("formatAutoAttendantSummaryHtml renders HTML for AA summary", () => {
   const output = formatAutoAttendantSummaryHtml({
     totalCalls: 2,
@@ -233,6 +250,24 @@ test("formatSummaryPdf renders pdf bytes", () => {
   });
 
   assert.equal(output.subarray(0, 4).toString("utf8"), "%PDF");
+  assert.match(output.toString("utf8"), /Queue Performance Chart \\\(Answered vs Missed\\\)/);
+});
+
+test("formatSummaryPdf uses totals chart label when answered breakdown is unavailable", () => {
+  const output = formatSummaryPdf({
+    totalCalls: 6,
+    averageWaitTimeSeconds: 0,
+    callsPerQueue: {
+      Sales: 4,
+      Support: 2
+    },
+    callsAnsweredByAgent: {},
+    callsAnsweredByQueueAndAgent: {}
+  });
+
+  assert.equal(output.subarray(0, 4).toString("utf8"), "%PDF");
+  assert.match(output.toString("utf8"), /Queue Performance Chart \\\(Total Calls\\\)/);
+  assert.match(output.toString("utf8"), /Sales \\\(4 total\\\)/);
 });
 
 test("formatSummaryXlsx renders zip bytes", () => {
@@ -246,6 +281,23 @@ test("formatSummaryXlsx renders zip bytes", () => {
 
   assert.equal(output.subarray(0, 2).toString("utf8"), "PK");
   assert.match(output.toString("latin1"), /xl\/charts\/chart1.xml/);
+});
+
+test("formatSummaryXlsx labels totals-only chart when answered breakdown is unavailable", () => {
+  const output = formatSummaryXlsx({
+    totalCalls: 6,
+    averageWaitTimeSeconds: 0,
+    callsPerQueue: {
+      Sales: 4,
+      Support: 2
+    },
+    callsAnsweredByAgent: {},
+    callsAnsweredByQueueAndAgent: {}
+  });
+
+  const text = output.toString("latin1");
+  assert.match(text, /Total Calls by Queue \(Answered Breakdown Unavailable\)/);
+  assert.match(text, /Total Calls/);
 });
 
 test("formatAutoAttendantSummaryXls renders excel workbook xml", () => {
@@ -274,6 +326,7 @@ test("formatAutoAttendantSummaryPdf renders pdf bytes", () => {
   });
 
   assert.equal(output.subarray(0, 4).toString("utf8"), "%PDF");
+  assert.match(output.toString("utf8"), /Auto Attendant Performance Chart \\\(Answered vs Missed\\\)/);
 });
 
 test("formatAutoAttendantSummaryXlsx renders zip bytes", () => {
